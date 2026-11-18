@@ -1,1 +1,5 @@
-# Cloudflare Pages static export — no SPA catch-all (country HTML is pre-built into out/).
+# Cloudflare Pages static export — country HTML is pre-built into out/.
+# Legacy Canada storefront → UK.
+/CA /UK 302
+/CA/ /UK 302
+/ca /UK 302
