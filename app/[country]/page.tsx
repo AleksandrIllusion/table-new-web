@@ -2,6 +2,9 @@ import { api } from "@/lib/api";
 import type { Casino, Theme } from "@/lib/types";
 import { StorefrontHeader, StorefrontCard } from "@/components/storefront";
 
+// Required for Cloudflare Pages (@cloudflare/next-on-pages) SSR on dynamic routes.
+export const runtime = "edge";
+
 const FALLBACK: Theme = {
   header_title: "CASINO", header_brand: "CANADA", tagline: "Play Big. Win Bigger.",
   pills: ["24/7 Support", "High withdrawal limit", "VIP"],

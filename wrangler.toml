@@ -1,0 +1,7 @@
+# Cloudflare Pages + @cloudflare/next-on-pages
+# Dashboard must use build command: npx @cloudflare/next-on-pages
+# (or: npm run pages:build). Do NOT use `next build` alone or output dir `out`.
+name = "table-new-web"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = ".vercel/output/static"
