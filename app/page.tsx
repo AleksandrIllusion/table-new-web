@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { STATIC_COUNTRY_CODES } from "@/lib/countries";
 
 export default function Home() {
   return (
@@ -8,7 +9,7 @@ export default function Home() {
         Public listing per country, e.g. <code className="text-neutral-200">/FI</code>.
       </p>
       <div className="mt-6 flex flex-wrap gap-3">
-        {["FI", "NZ", "CA", "PT", "AU"].map((c) => (
+        {STATIC_COUNTRY_CODES.map((c) => (
           <Link
             key={c}
             href={`/${c}`}

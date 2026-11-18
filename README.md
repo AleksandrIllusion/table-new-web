@@ -14,31 +14,30 @@ npm run dev                  # http://localhost:3000
 
 ## Deploy → Cloudflare Pages
 
-This app uses **`@cloudflare/next-on-pages`** (SSR / Edge), not a static `output: 'export'`.
-Plain `next build` writes `.next` only — it does **not** create an `out/` folder.
-The Pages adapter emits the deployable assets under `.vercel/output/static`
-(see `wrangler.toml` → `pages_build_output_dir`).
+Static export (`output: "export"` in `next.config.mjs`). `next build` writes the site to **`out/`**.
 
 ### Dashboard settings (required)
 
 | Setting | Value |
 | --- | --- |
 | Framework preset | Next.js (or None) |
-| Build command | `npx @cloudflare/next-on-pages` (or `npm run pages:build`) |
-| Build output directory | `.vercel/output/static` |
-| Compatibility flags | `nodejs_compat` |
+| Build command | `npx next build` (or `npm run build`) |
+| Build output directory | `out` |
 | Node.js version | 20+ |
 | Env var | `NEXT_PUBLIC_API_URL` = HTTPS API URL (e.g. Render) |
 
-**Do not** set output directory to `out` and **do not** use `npx next build` as the only
-build command — that combination fails with `Output directory "out" not found`.
-
-Local check (same artifact Cloudflare deploys):
+Local check:
 
 ```bash
 npm install
-npm run pages:build
-# expect: .vercel/output/static/
+npm run build
+# expect: out/  (e.g. out/FI.html, out/index.html)
 ```
+
+### Limitations (static export)
+- Country pages are pre-rendered at **build time** for codes in `lib/countries.ts` (`FI`, `NZ`, `CA`, `PT`, `AU`). Add a code there (and redeploy) to publish a new country URL.
+- Listing/theme data is snapshotted when Cloudflare builds; it does not SSR on each request.
+- Admin UI is client-side JS against the API; it still needs a reachable `NEXT_PUBLIC_API_URL`.
+- `next start` is not used for production — Pages serves `out/` as static assets.
 
 # table-new-web

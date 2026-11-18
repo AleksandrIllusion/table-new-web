@@ -1,9 +1,8 @@
 # dependencies
 node_modules/
 
-# next / vercel / cloudflare adapter output
+# next / build output
 .next/
-.vercel/
 out/
 
 # env / local
@@ -14,4 +13,3 @@ out/
 # misc
 *.log
 .DS_Store
-.next-on-pages*/

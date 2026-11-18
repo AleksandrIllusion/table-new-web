@@ -1,1 +1,1 @@
-# Next-on-Pages handles routing; этот файл — на случай статических фолбэков.
+# Cloudflare Pages static export — no SPA catch-all (country HTML is pre-built into out/).

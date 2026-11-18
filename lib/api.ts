@@ -5,15 +5,17 @@ export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:9001
 type Options = RequestInit & { token?: string };
 
 export async function api<T>(path: string, opts: Options = {}): Promise<T> {
-  const { token, headers, ...rest } = opts;
+  // Allow callers (e.g. static country pages) to opt into cached/build-time fetch.
+  // Default remains no-store for client/admin interactive requests.
+  const { token, headers, cache = "no-store", ...rest } = opts;
   const res = await fetch(`${API_URL}${path}`, {
     ...rest,
+    cache,
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...headers,
     },
-    cache: "no-store",
   });
   if (!res.ok) {
     let message = `Request failed (${res.status})`;
