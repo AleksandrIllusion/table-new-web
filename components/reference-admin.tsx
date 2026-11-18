@@ -119,7 +119,7 @@ export function ReferenceAdmin({
         </button>
       </form>
 
-      <ul className="divide-y divide-neutral-800 rounded-xl border border-neutral-800">
+      <ul className="divide-y divide-white/5 rounded-xl border border-neutral-800">
         {items.length === 0 && <li className="p-4 text-neutral-500">Empty</li>}
         {items.map((row, i) => (
           <li key={row.id ?? i} className="flex justify-between gap-4 p-3 text-sm">

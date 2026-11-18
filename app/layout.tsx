@@ -11,7 +11,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link href="https://fonts.googleapis.com/css2?family=Aboreto&family=Abril+Fatface&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Aboreto&family=Abril+Fatface&family=Playfair+Display:wght@500;700;900&family=Cinzel:wght@500;700&family=Oswald:wght@500;700&family=Bebas+Neue&family=Montserrat:wght@400;600;700&family=Poppins:wght@400;600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className="min-h-screen">{children}</body>
     </html>

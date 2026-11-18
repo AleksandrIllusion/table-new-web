@@ -2,20 +2,20 @@
 
 import { ReactNode } from "react";
 
-// Единые классы — одна правда для всех экранов.
+// Единая дизайн-система админки — меняется здесь, применяется везде.
 export const cx = {
   input:
-    "w-full rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm outline-none focus:border-blue-500 aria-[invalid=true]:border-red-500 disabled:opacity-50",
-  label: "mb-1 block text-sm text-neutral-300",
+    "w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2.5 text-sm text-neutral-100 placeholder-neutral-500 outline-none transition focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50 aria-[invalid=true]:border-red-500/60",
+  label: "mb-1.5 block text-sm font-medium text-neutral-300",
   btnPrimary:
-    "rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50",
+    "inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm shadow-blue-900/40 transition hover:bg-blue-500 active:scale-[.98] disabled:opacity-50",
   btnGhost:
-    "rounded-lg border border-neutral-700 px-4 py-2 text-sm text-neutral-200 hover:bg-neutral-800",
+    "inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.02] px-4 py-2 text-sm text-neutral-200 transition hover:bg-white/[0.06] active:scale-[.98]",
   btnDanger:
-    "rounded-md border border-red-900 px-3 py-1 text-sm text-red-300 hover:bg-red-950",
-  card: "rounded-xl border border-neutral-800 bg-neutral-900",
-  errorBox: "rounded-lg border border-red-900 bg-red-950 p-3 text-sm text-red-200",
-  okBox: "rounded-lg border border-green-900 bg-green-950 p-3 text-sm text-green-200",
+    "inline-flex items-center rounded-lg border border-red-500/25 bg-red-500/5 px-3 py-1.5 text-sm text-red-300 transition hover:bg-red-500/10",
+  card: "rounded-2xl border border-white/10 bg-white/[0.02]",
+  errorBox: "rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-200",
+  okBox: "rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-200",
 };
 
 export function Field({
@@ -35,17 +35,17 @@ export function Modal({
 }: { title: string; onClose: () => void; children: ReactNode; footer?: ReactNode }) {
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 p-4"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 p-4 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className="mt-10 w-full max-w-lg rounded-2xl border border-neutral-800 bg-neutral-900 p-6"
+        className="mt-10 w-full max-w-lg rounded-2xl border border-white/10 bg-neutral-900 p-6 shadow-2xl shadow-black/60"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-semibold">{title}</h2>
+        <div className="mb-5 flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-white">{title}</h2>
           <button onClick={onClose} aria-label="Close"
-            className="rounded-lg px-2 py-1 text-neutral-400 hover:bg-neutral-800">✕</button>
+            className="rounded-lg p-1.5 text-neutral-400 transition hover:bg-white/5 hover:text-neutral-200">✕</button>
         </div>
         {children}
         {footer && <div className="mt-6 flex justify-end gap-2">{footer}</div>}
@@ -55,11 +55,14 @@ export function Modal({
 }
 
 export function PageHeader({
-  title, action,
-}: { title: string; action?: ReactNode }) {
+  title, subtitle, action,
+}: { title: string; subtitle?: string; action?: ReactNode }) {
   return (
-    <div className="mb-6 flex items-center justify-between">
-      <h1 className="text-2xl font-bold">{title}</h1>
+    <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight text-white">{title}</h1>
+        {subtitle && <p className="mt-0.5 text-sm text-neutral-400">{subtitle}</p>}
+      </div>
       {action}
     </div>
   );

@@ -12,6 +12,7 @@ const FALLBACK: Theme = {
   button_text: "PLAY NOW", button_primary: "#16A34A", button_secondary: "#FFD700",
   card_variant: "classic", card_radius: 18, badge_style: "bar", pill_shape: "pill",
   show_logo: true, show_payments: true,
+  font_heading: "Aboreto", font_body: "Inter", heading_size: 38,
 };
 
 /** Required for `output: 'export'` — only these codes are written into `out/`. */

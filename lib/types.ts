@@ -33,4 +33,7 @@ export interface Theme {
   pill_shape: "pill" | "square";
   show_logo: boolean;
   show_payments: boolean;
+  font_heading: string;
+  font_body: string;
+  heading_size: number;
 }

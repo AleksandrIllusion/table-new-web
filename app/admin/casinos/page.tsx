@@ -108,7 +108,7 @@ export default function CasinosAdminPage() {
 
       <div className={`overflow-hidden ${cx.card}`}>
         <table className="w-full text-sm">
-          <thead className="bg-neutral-900 text-left text-neutral-400">
+          <thead className="bg-white/5 text-left text-neutral-400">
             <tr>
               {ordering && <th className="p-3 font-medium">#</th>}
               <th className="p-3 font-medium">Title</th>
@@ -116,7 +116,7 @@ export default function CasinosAdminPage() {
               <th className="p-3 text-right font-medium">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-neutral-800">
+          <tbody className="divide-y divide-white/5">
             {rows.length === 0 && (
               <tr><td colSpan={ordering ? 4 : 3} className="p-6 text-center text-neutral-500">
                 {ordering ? `No casinos for ${selectedCode}` : "No casinos yet"}

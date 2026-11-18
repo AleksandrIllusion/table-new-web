@@ -1,135 +1,188 @@
 "use client";
 
+import { useState } from "react";
 import type { Casino, Theme } from "@/lib/types";
+
+const ff = (name: string) => `"${name}", serif`;
 
 function Stars({ rate, color }: { rate: number; color: string }) {
   const n = Math.max(0, Math.min(5, Math.round(rate)));
   return (
-    <span style={{ color, letterSpacing: 1 }}>
-      {"★".repeat(n)}<span style={{ opacity: 0.35 }}>{"★".repeat(5 - n)}</span>
+    <span style={{ color, letterSpacing: 2, fontSize: 13 }}>
+      {"★".repeat(n)}<span style={{ opacity: 0.3 }}>{"★".repeat(5 - n)}</span>
     </span>
+  );
+}
+
+function LogoTile({ src, title, accent }: { src: string | null; title: string; accent: string }) {
+  const [broken, setBroken] = useState(false);
+  const ok = !!src && src.startsWith("https://") && !broken;
+  if (ok) {
+    return (
+      <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-black/40">
+        <img src={src as string} alt={title} onError={() => setBroken(true)}
+          className="max-h-full max-w-full object-contain" />
+      </div>
+    );
+  }
+  const initials = title.replace(/[^a-zA-Z0-9 ]/g, "").split(/\s+/).map((w) => w[0]).slice(0, 2).join("").toUpperCase() || "C";
+  return (
+    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-white/10"
+      style={{ background: `linear-gradient(145deg, ${accent}22, #000)`, color: accent, fontWeight: 700 }}>
+      {initials}
+    </div>
   );
 }
 
 export function StorefrontHeader({ theme }: { theme: Theme }) {
   return (
-    <header className="rounded-2xl border p-6 text-center"
-      style={{ borderColor: `${theme.accent_color}44`, background: "#0c0c0c" }}>
-      {theme.logo_url && <img src={theme.logo_url} alt="" className="mx-auto mb-2 h-10 w-auto object-contain" />}
-      <div style={{ fontFamily: "Aboreto, cursive", letterSpacing: 4 }}>
-        <div className="text-sm" style={{ color: "#cfcfcf" }}>{theme.header_title}</div>
-        <div className="text-3xl" style={{ color: theme.accent_color }}>{theme.header_brand}</div>
+    <header className="rounded-2xl border p-7 text-center"
+      style={{ borderColor: `${theme.accent_color}33`, background: "radial-gradient(120% 100% at 50% 0%, #15131b, #0a0a0a)" }}>
+      {theme.logo_url && <img src={theme.logo_url} alt="" className="mx-auto mb-3 h-10 w-auto object-contain" />}
+      <div style={{ fontFamily: ff(theme.font_heading), letterSpacing: 6 }}>
+        <div className="text-xs" style={{ color: "#b9b9b9", letterSpacing: 8 }}>{theme.header_title}</div>
+        <div className="mt-0.5 text-3xl" style={{ color: theme.accent_color }}>{theme.header_brand}</div>
       </div>
-      <div className="mt-1 italic" style={{ fontFamily: "'Abril Fatface', cursive", color: theme.accent_color }}>
+      <div className="mt-2 text-sm italic" style={{ fontFamily: ff(theme.font_heading), color: `${theme.accent_color}cc` }}>
         {theme.tagline}
       </div>
-      <div className="mt-4 flex flex-wrap justify-center gap-2">
+      <div className="mt-5 flex flex-wrap justify-center gap-2">
         {theme.pills.map((p, i) => (
           <span key={i} className="rounded-full border px-4 py-1.5 text-sm"
-            style={{ borderColor: "#2a2a2a", color: "#e5e5e5" }}>{p}</span>
+            style={{ borderColor: "#2e2e2e", color: "#e9e9e9", fontFamily: ff(theme.font_body) }}>{p}</span>
         ))}
       </div>
     </header>
   );
 }
 
+// Разбираем строку бонуса на части, чтобы собрать аккуратный блок,
+// а не вываливать длинный текст одним заголовком.
+function parseBonus(text?: string) {
+  if (!text) return { percent: null, amount: null, spins: null };
+  const percent = text.match(/\d+\s?%/)?.[0]?.replace(/\s+/g, "") ?? null;
+  const amount =
+    text.match(/[£$€]\s?[\d.,]+/)?.[0]?.replace(/\s+/g, "") ??
+    text.match(/\b[\d.,]+\s?(?:CAD|EUR|GBP|USD|NZD|AUD)\b/i)?.[0]?.replace(/\s+/g, " ") ??
+    null;
+  const spins = text.match(/\d+\s*(?:free\s*)?spins/i)?.[0]?.replace(/\s+/g, " ") ?? null;
+  return { percent, amount, spins };
+}
+
 export function StorefrontCard({ casino, idx, theme }: { casino: Casino; idx: number; theme: Theme }) {
   const badge = theme.badges[idx];
   const primary = idx === 0;
   const btnColor = primary ? theme.button_primary : theme.button_secondary;
-  const btnTextColor = primary ? "#fff" : "#111";
+  const btnText = primary ? "#fff" : "#161616";
   const safeLink = casino.link?.startsWith("https://") ? casino.link : undefined;
   const headline = casino.bonuses[0]?.bonus;
-  const sub = casino.bonuses.map((b) => b.bonus).join(" · ");
+  const { percent, amount, spins } = parseBonus(headline);
+  const extra = casino.bonuses.slice(1).map((b) => b.bonus).join(" · ");
   const compact = theme.card_variant === "compact";
-  const pillRadius = theme.pill_shape === "square" ? 6 : 999;
-  const grad = `linear-gradient(90deg, ${theme.card_from}, ${theme.card_to})`;
-
-  const RatingBox = (
-    <div className="rounded-xl border px-5 py-2 text-center"
-      style={{ borderColor: theme.accent_color, background: "linear-gradient(180deg,#1a1405,#000)" }}>
-      <div className="text-3xl font-bold" style={{ color: theme.accent_color, fontFamily: "Aboreto, cursive" }}>
-        {casino.casino_rate}<span className="text-sm text-neutral-400">/5</span>
-      </div>
-      <Stars rate={casino.casino_rate} color={theme.accent_color} />
-    </div>
-  );
-
-  const Pills = (bg?: string) => (
-    <div className="flex flex-wrap gap-2 px-4 py-4" style={bg ? { background: bg } : undefined}>
-      {casino.features.map((f) => (
-        <span key={f.id} className="border px-3 py-1.5 text-sm text-white"
-          style={{ borderColor: "#ffffff33", borderRadius: pillRadius }}>⚡ {f.feature}</span>
-      ))}
-    </div>
-  );
-
-  const Payments = theme.show_payments && casino.payments.some((p) => p.payment_link) && (
-    <div className="flex flex-wrap items-center gap-3 px-4 py-3">
-      {casino.payments.filter((p) => p.payment_link?.startsWith("https://")).map((p) => (
-        <img key={p.id} src={p.payment_link as string} alt={p.payment} className="h-5 w-auto object-contain" />
-      ))}
-    </div>
-  );
-
-  const Cta = (
-    <div className="p-4 pt-0">
-      {safeLink ? (
-        <a href={safeLink} target="_blank" rel="noopener noreferrer sponsored"
-          className="block rounded-full py-4 text-center text-lg font-semibold"
-          style={{ background: btnColor, color: btnTextColor, fontFamily: "'Abril Fatface', cursive" }}>
-          {theme.button_text} ›
-        </a>
-      ) : (
-        <span className="block rounded-full bg-neutral-700 py-4 text-center text-neutral-300">Unavailable</span>
-      )}
-    </div>
-  );
+  const pillRadius = theme.pill_shape === "square" ? 8 : 999;
+  const grad = `linear-gradient(100deg, ${theme.card_from}, ${theme.card_to})`;
+  const headFont = ff(theme.font_heading);
+  const bodyFont = ff(theme.font_body);
 
   return (
-    <article className="relative overflow-hidden border"
-      style={{ borderColor: `${theme.accent_color}55`, background: theme.bg_color, borderRadius: theme.card_radius }}>
-      {/* badge — corner или bar */}
+    <article className={`sf-card relative overflow-hidden border ${primary ? "sf-top" : ""}`}
+      style={{
+        borderColor: `${theme.accent_color}44`, background: "#0b0b0b",
+        borderRadius: theme.card_radius, fontFamily: bodyFont,
+        boxShadow: `0 1px 0 ${theme.accent_color}1a inset, 0 10px 30px rgba(0,0,0,.4)`,
+        ["--card-accent" as any]: theme.accent_color,
+      }}>
       {badge && theme.badge_style === "corner" && (
         <span className="absolute right-0 top-0 px-4 py-1.5 text-sm font-medium"
-          style={{ background: theme.accent_color, color: "#111", borderBottomLeftRadius: 12 }}>{badge}</span>
+          style={{ background: theme.accent_color, color: "#111", borderBottomLeftRadius: 14 }}>{badge}</span>
       )}
 
-      {/* top: name + rating */}
-      <div className="flex items-center justify-between gap-3 p-4">
+      {/* header */}
+      <div className="flex items-center justify-between gap-3 p-5">
         <div className="flex items-center gap-3">
-          {theme.show_logo && casino.logo_img?.startsWith("https://") && (
-            <img src={casino.logo_img} alt="" className="h-12 w-12 rounded-lg object-contain" />
-          )}
-          <div className="text-lg font-semibold text-white" style={{ fontFamily: "Aboreto, cursive" }}>
+          {theme.show_logo && <LogoTile src={casino.logo_img} title={casino.title} accent={theme.accent_color} />}
+          <div className="text-lg font-semibold text-white" style={{ fontFamily: headFont, letterSpacing: 0.5 }}>
             {casino.title}
           </div>
         </div>
-        {RatingBox}
+        <div className="sf-rate rounded-2xl border px-4 py-2 text-center"
+          style={{ borderColor: theme.accent_color, background: "linear-gradient(180deg, #221a06, #000)",
+                   boxShadow: `0 0 18px ${theme.accent_color}22` }}>
+          <div className="leading-none" style={{ color: theme.accent_color, fontFamily: headFont, fontSize: 30 }}>
+            {casino.casino_rate}<span className="align-top text-sm text-neutral-400">/5</span>
+          </div>
+          <div className="mt-1"><Stars rate={casino.casino_rate} color={theme.accent_color} /></div>
+        </div>
       </div>
 
       {badge && theme.badge_style === "bar" && (
-        <div className="px-4 py-2 text-sm font-medium"
-          style={{ background: `${theme.accent_color}1a`, color: theme.accent_color }}>⚡ {badge}</div>
-      )}
-
-      {!compact && (
-        <div className="flex items-end justify-between gap-4 px-4 pt-4" style={{ background: grad }}>
-          <div>
-            <div className="text-xs tracking-widest text-neutral-300">WELCOME BONUS</div>
-            {headline && (
-              <div className="text-4xl font-bold" style={{ color: "#fff", fontFamily: "'Abril Fatface', cursive" }}>
-                {headline}
-              </div>
-            )}
-            {sub && <div className="mt-1 text-sm text-neutral-300">{sub}</div>}
-          </div>
+        <div className="px-5 py-2 text-sm font-medium"
+          style={{ background: `linear-gradient(90deg, ${theme.accent_color}22, transparent)`, color: theme.accent_color }}>
+          ⚡ {badge}
         </div>
       )}
 
-      {Pills(compact ? undefined : grad)}
-      {Payments}
-      {Cta}
+      {/* welcome bonus */}
+      {!compact && headline && (
+        <div className="px-5 pt-5" style={{ background: grad }}>
+          <div className="text-[11px] font-medium tracking-[0.2em] text-white/70">WELCOME BONUS</div>
+
+          {percent ? (
+            <div className="mt-1.5 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <span className="leading-none text-white"
+                style={{ fontFamily: headFont, fontSize: theme.heading_size }}>{percent}</span>
+              {amount && (
+                <span className="text-lg text-white/90" style={{ fontFamily: headFont }}>
+                  up to {amount}
+                </span>
+              )}
+            </div>
+          ) : (
+            // нет процента — показываем текст компактно, в 2 строки максимум
+            <div className="mt-1.5 line-clamp-2 text-xl leading-snug text-white"
+              style={{ fontFamily: headFont }}>{headline}</div>
+          )}
+
+          {spins && (
+            <span className="mt-2 inline-block rounded-full px-3 py-1 text-sm text-white"
+              style={{ background: "rgba(255,255,255,.1)" }}>+ {spins}</span>
+          )}
+          {extra && <div className="mt-2 text-sm text-white/65">{extra}</div>}
+        </div>
+      )}
+
+      {/* features */}
+      <div className="flex flex-wrap gap-2 px-5 py-4" style={compact ? undefined : { background: grad }}>
+        {casino.features.map((f) => (
+          <span key={f.id} className="border px-3 py-1.5 text-sm text-white"
+            style={{ borderColor: "#ffffff2e", borderRadius: pillRadius, background: "rgba(255,255,255,.04)" }}>
+            ⚡ {f.feature}
+          </span>
+        ))}
+      </div>
+
+      {/* payments */}
+      {theme.show_payments && casino.payments.some((p) => p.payment_link) && (
+        <div className="flex flex-wrap items-center gap-3 px-5 py-3">
+          {casino.payments.filter((p) => p.payment_link?.startsWith("https://")).map((p) => (
+            <img key={p.id} src={p.payment_link as string} alt={p.payment}
+              className="h-5 w-auto object-contain opacity-90" />
+          ))}
+        </div>
+      )}
+
+      {/* CTA */}
+      <div className="p-5 pt-1">
+        {safeLink ? (
+          <a href={safeLink} target="_blank" rel="noopener noreferrer sponsored"
+            className={`sf-cta ${primary ? "sf-cta--top" : ""} block rounded-full py-4 text-center text-lg font-semibold transition hover:brightness-110`}
+            style={{ background: `linear-gradient(180deg, ${btnColor}, ${btnColor}cc)`, color: btnText, fontFamily: headFont, letterSpacing: 1 }}>
+            {theme.button_text} ›
+          </a>
+        ) : (
+          <span className="block rounded-full bg-neutral-800 py-4 text-center text-neutral-400">Unavailable</span>
+        )}
+      </div>
     </article>
   );
 }

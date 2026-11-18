@@ -83,18 +83,18 @@ export function ResourceAdmin({
 
       <div className={`overflow-hidden ${cx.card}`}>
         <table className="w-full text-sm">
-          <thead className="bg-neutral-900 text-left text-neutral-400">
+          <thead className="bg-white/5 text-left text-neutral-400">
             <tr>
               <th className="p-3 font-medium">#</th>
               {columns.map((c) => <th key={c.header} className="p-3 font-medium">{c.header}</th>)}
             </tr>
           </thead>
-          <tbody className="divide-y divide-neutral-800">
+          <tbody className="divide-y divide-white/5">
             {items.length === 0 && (
               <tr><td colSpan={columns.length + 1} className="p-6 text-center text-neutral-500">No records yet</td></tr>
             )}
             {items.map((row, i) => (
-              <tr key={row.id ?? i} className="hover:bg-neutral-900/50">
+              <tr key={row.id ?? i} className="hover:bg-white/[0.03]">
                 <td className="p-3 text-neutral-500">{row.id}</td>
                 {columns.map((c) => <td key={c.header} className="p-3">{c.cell(row)}</td>)}
               </tr>
