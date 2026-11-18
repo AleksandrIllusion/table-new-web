@@ -125,7 +125,7 @@ export default function CasinosAdminPage() {
             {rows.map((r, i) => {
               const id = rowId(r);
               return (
-                <tr key={id} className="hover:bg-white/[0.03]">
+                <tr key={id} className="hover:bg-neutral-900/50">
                   {ordering && <td className="p-3 text-neutral-500">{i + 1}</td>}
                   <td className="p-3">{r.title}</td>
                   <td className="p-3">{r.casino_rate}</td>
