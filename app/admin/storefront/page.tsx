@@ -35,7 +35,9 @@ export default function StorefrontThemePage() {
   const save = async () => {
     setSaving(true); setMsg(null);
     try {
-      const saved = await api<Theme>("/theme", { method: "PUT", token: getToken(), body: JSON.stringify(theme) });
+      // не шлём на бэк служебные поля (id, updated_at) — валидатор их отклонит
+      const { id, updated_at, ...payload } = theme as Theme & { id?: number; updated_at?: string };
+      const saved = await api<Theme>("/theme", { method: "PUT", token: getToken(), body: JSON.stringify(payload) });
       setTheme(saved);
       setMsg({ kind: "ok", text: "Saved. Storefront updated." });
     } catch (e) {
