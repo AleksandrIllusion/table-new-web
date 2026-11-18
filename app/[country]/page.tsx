@@ -1,4 +1,5 @@
 import { api } from "@/lib/api";
+import { STATIC_COUNTRY_CODES } from "@/lib/countries";
 import type { Casino, Theme } from "@/lib/types";
 import { StorefrontHeader, StorefrontCard } from "@/components/storefront";
 
@@ -13,6 +14,11 @@ const FALLBACK: Theme = {
   show_logo: true, show_payments: true,
 };
 
+/** Required for `output: 'export'` — only these codes are written into `out/`. */
+export function generateStaticParams() {
+  return STATIC_COUNTRY_CODES.map((country) => ({ country }));
+}
+
 export default async function CountryPage({ params }: { params: { country: string } }) {
   const code = params.country.toUpperCase();
 
@@ -21,8 +27,11 @@ export default async function CountryPage({ params }: { params: { country: strin
   let error: string | null = null;
   try {
     const [res, t] = await Promise.all([
-      api<{ data: Casino[] }>(`/casinos/website/country_code/${encodeURIComponent(code)}?limit=50&sort=DESC`),
-      api<Theme>("/theme").catch(() => FALLBACK),
+      api<{ data: Casino[] }>(
+        `/casinos/website/country_code/${encodeURIComponent(code)}?limit=50&sort=DESC`,
+        { cache: "force-cache" },
+      ),
+      api<Theme>("/theme", { cache: "force-cache" }).catch(() => FALLBACK),
     ]);
     casinos = res.data ?? [];
     if (t) theme = { ...FALLBACK, ...t };
