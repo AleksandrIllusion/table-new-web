@@ -3,4 +3,47 @@
 @tailwind utilities;
 
 :root { color-scheme: dark; }
-body { @apply bg-neutral-950 text-neutral-100 antialiased; }
+
+body {
+  @apply text-neutral-100 antialiased;
+  background:
+    radial-gradient(1000px 600px at 15% -10%, rgba(37,99,235,0.08), transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, rgba(147,51,234,0.06), transparent 55%),
+    #0a0a0b;
+  background-attachment: fixed;
+}
+
+/* аккуратные скроллбары */
+* { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.15) transparent; }
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 8px; }
+
+/* ---------- storefront card: casino interactivity ---------- */
+.sf-card{ transition: transform .25s ease, box-shadow .25s ease; }
+.sf-card:hover{ transform: translateY(-3px); }
+
+.sf-cta{ position: relative; overflow: hidden; }
+.sf-cta::after{
+  content:""; position:absolute; top:0; bottom:0; width:45%;
+  background: linear-gradient(110deg, transparent, rgba(255,255,255,.4), transparent);
+  transform: translateX(-130%); pointer-events:none;
+}
+.sf-cta:hover::after{ animation: sf-shine .9s ease; }
+
+.sf-rate{ position: relative; overflow: hidden; }
+.sf-rate::after{
+  content:""; position:absolute; inset:0;
+  background: linear-gradient(110deg, transparent 42%, rgba(255,255,255,.22) 50%, transparent 58%);
+  transform: translateX(-130%); pointer-events:none;
+}
+
+@keyframes sf-shine { 0%{ transform: translateX(-130%);} 100%{ transform: translateX(240%);} }
+@keyframes sf-glow {
+  0%,100%{ box-shadow: 0 0 0 1px color-mix(in srgb, var(--card-accent) 35%, transparent), 0 0 22px color-mix(in srgb, var(--card-accent) 20%, transparent); }
+  50%    { box-shadow: 0 0 0 1px color-mix(in srgb, var(--card-accent) 65%, transparent), 0 0 42px color-mix(in srgb, var(--card-accent) 42%, transparent); }
+}
+@media (prefers-reduced-motion: no-preference){
+  .sf-top{ animation: sf-glow 3s ease-in-out infinite; }
+  .sf-cta.sf-cta--top::after{ animation: sf-shine 2.8s ease-in-out infinite; }
+  .sf-rate::after{ animation: sf-shine 3.6s ease-in-out infinite; }
+}
