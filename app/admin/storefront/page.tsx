@@ -15,6 +15,9 @@ const DEMO = {
   payments: [],
 };
 
+const FONTS = ["Aboreto","Abril Fatface","Playfair Display","Cinzel","Oswald","Bebas Neue","Montserrat","Poppins","Inter"];
+const FONT_DEFAULTS = { font_heading: "Aboreto", font_body: "Inter", heading_size: 38 };
+
 export default function StorefrontThemePage() {
   const [theme, setTheme] = useState<Theme | null>(null);
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
@@ -22,7 +25,7 @@ export default function StorefrontThemePage() {
 
   useEffect(() => {
     (async () => {
-      try { setTheme(await api<Theme>("/theme")); }
+      try { setTheme({ ...FONT_DEFAULTS, ...(await api<Theme>("/theme")) }); }
       catch (e) { setMsg({ kind: "err", text: e instanceof Error ? e.message : "Failed to load" }); }
     })();
   }, []);
@@ -119,6 +122,26 @@ export default function StorefrontThemePage() {
               <label className="flex items-center gap-2 text-sm text-neutral-300">
                 <input type="checkbox" checked={theme.show_payments} onChange={(e) => set("show_payments", e.target.checked)} /> Show payments
               </label>
+            </div>
+          </div>
+
+          <div className={`${cx.card} p-4`}>
+            <div className="mb-3 text-sm text-neutral-400">Typography</div>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Heading font">
+                <select value={theme.font_heading} onChange={(e) => set("font_heading", e.target.value)} className={cx.input}>
+                  {FONTS.map((f) => <option key={f} value={f}>{f}</option>)}
+                </select>
+              </Field>
+              <Field label="Body font">
+                <select value={theme.font_body} onChange={(e) => set("font_body", e.target.value)} className={cx.input}>
+                  {FONTS.map((f) => <option key={f} value={f}>{f}</option>)}
+                </select>
+              </Field>
+              <Field label={`Headline size (${theme.heading_size}px)`}>
+                <input type="range" min={20} max={64} value={theme.heading_size}
+                  onChange={(e) => set("heading_size", Number(e.target.value))} className="w-full" />
+              </Field>
             </div>
           </div>
 
