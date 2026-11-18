@@ -5,7 +5,8 @@ import { api } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { cx, Field, Modal, PageHeader } from "@/components/ui";
 
-type CloakRow = {
+/** Domain row from Nest /switch — field name `cloaker` is the API contract. */
+type ShiftRow = {
   id: number;
   domain: string;
   cloaker: boolean;
@@ -17,13 +18,13 @@ type GeoRow = {
   country: string;
 };
 
-export function CloakerAdmin() {
-  const [items, setItems] = useState<CloakRow[]>([]);
+export function ShiftAdmin() {
+  const [items, setItems] = useState<ShiftRow[]>([]);
   const [countries, setCountries] = useState<GeoRow[]>([]);
   const [open, setOpen] = useState(false);
   const [domain, setDomain] = useState("");
   const [countryId, setCountryId] = useState("");
-  const [cloakerOn, setCloakerOn] = useState(true);
+  const [shiftOn, setShiftOn] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
@@ -33,11 +34,11 @@ export function CloakerAdmin() {
 
   const load = async () => {
     try {
-      const [cloaks, geos] = await Promise.all([
-        api<CloakRow[]>("/switch/get-all-cloaks", { token: token() }),
+      const [rows, geos] = await Promise.all([
+        api<ShiftRow[]>("/switch/get-all-cloaks", { token: token() }),
         api<GeoRow[]>("/switch/cloaker-countries", { token: token() }),
       ]);
-      setItems(Array.isArray(cloaks) ? cloaks : []);
+      setItems(Array.isArray(rows) ? rows : []);
       setCountries(Array.isArray(geos) ? geos : []);
     } catch (e) {
       setMsg({ kind: "err", text: e instanceof Error ? e.message : "Failed to load" });
@@ -49,12 +50,12 @@ export function CloakerAdmin() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const toggle = async (row: CloakRow) => {
+  const toggle = async (row: ShiftRow) => {
     setMsg(null);
     setTogglingId(row.id);
     try {
       // Nest UpdateCloakStatusDto: { id: number, cloaker: boolean }
-      const next = await api<CloakRow[]>("/switch/switch-status", {
+      const next = await api<ShiftRow[]>("/switch/switch-status", {
         method: "PUT",
         token: token(),
         body: JSON.stringify({ id: row.id, cloaker: !Boolean(row.cloaker) }),
@@ -63,7 +64,7 @@ export function CloakerAdmin() {
       else await load();
       setMsg({
         kind: "ok",
-        text: `Cloaker ${!row.cloaker ? "enabled" : "disabled"} for ${row.domain}`,
+        text: `Shift ${!row.cloaker ? "enabled" : "disabled"} for ${row.domain}`,
       });
     } catch (e) {
       setMsg({ kind: "err", text: e instanceof Error ? e.message : "Toggle failed" });
@@ -97,13 +98,13 @@ export function CloakerAdmin() {
         body: JSON.stringify({
           domain: domain.trim().toLowerCase(),
           country_id: Number(countryId),
-          cloaker: cloakerOn,
+          cloaker: shiftOn,
         }),
       });
       setMsg({ kind: "ok", text: `Domain ${domain.trim().toLowerCase()} created.` });
       setDomain("");
       setCountryId("");
-      setCloakerOn(true);
+      setShiftOn(true);
       setErrors({});
       setOpen(false);
       await load();
@@ -117,14 +118,14 @@ export function CloakerAdmin() {
   return (
     <main className="px-4 py-10">
       <PageHeader
-        title="Cloaker"
-        subtitle="Enable or disable cloaking per domain"
+        title="Shift"
+        subtitle="Enable or disable shift per domain"
         action={
           <button
             onClick={() => {
               setDomain("");
               setCountryId("");
-              setCloakerOn(true);
+              setShiftOn(true);
               setErrors({});
               setOpen(true);
             }}
@@ -146,14 +147,14 @@ export function CloakerAdmin() {
               <th className="p-3 font-medium">#</th>
               <th className="p-3 font-medium">Domain</th>
               <th className="p-3 font-medium">Country</th>
-              <th className="p-3 font-medium">Cloaker</th>
+              <th className="p-3 font-medium">Shift</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
             {items.length === 0 && (
               <tr>
                 <td colSpan={4} className="p-6 text-center text-neutral-500">
-                  No domains yet — create one to manage cloaking per host
+                  No domains yet — create one to manage shift per host
                 </td>
               </tr>
             )}
@@ -186,7 +187,7 @@ export function CloakerAdmin() {
       </div>
 
       {open && (
-        <Modal title="New cloaker domain" onClose={() => setOpen(false)}>
+        <Modal title="New shift domain" onClose={() => setOpen(false)}>
           <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
             <Field label="Domain" error={errors.domain}>
               <input
@@ -222,11 +223,11 @@ export function CloakerAdmin() {
             <label className="flex items-center gap-3 text-sm text-neutral-300">
               <input
                 type="checkbox"
-                checked={cloakerOn}
-                onChange={(e) => setCloakerOn(e.target.checked)}
+                checked={shiftOn}
+                onChange={(e) => setShiftOn(e.target.checked)}
                 className="h-4 w-4 rounded border-white/20 bg-white/5"
               />
-              Cloaker enabled on create
+              Shift enabled on create
             </label>
             <div className="mt-2 flex justify-end gap-2">
               <button type="button" onClick={() => setOpen(false)} className={cx.btnGhost}>

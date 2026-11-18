@@ -1,7 +1,6 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { CloakerAdmin } from "@/components/cloaker-admin";
-
+/** Legacy route — renamed to /admin/shift */
 export default function Page() {
-  return <CloakerAdmin />;
+  redirect("/admin/shift");
 }

@@ -3,7 +3,7 @@ import Link from "next/link";
 const links = [
   { href: "/admin/casinos", label: "Casinos", desc: "Table, create/edit popup, rating order" },
   { href: "/admin/storefront", label: "Storefront design", desc: "Colors, fonts, layout — live preview" },
-  { href: "/admin/cloaker", label: "Cloaker", desc: "Per-domain cloaking on/off + create domains" },
+  { href: "/admin/shift", label: "Shift", desc: "Per-domain shift on/off + create domains" },
   { href: "/admin/countries", label: "Countries", desc: "Reference list" },
   { href: "/admin/country-codes", label: "Country codes", desc: "Codes per country" },
   { href: "/admin/bonuses", label: "Bonuses", desc: "Reference list" },
