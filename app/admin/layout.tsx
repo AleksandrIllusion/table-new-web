@@ -7,6 +7,7 @@ import { clearToken } from "@/lib/auth";
 const NAV = [
   { href: "/admin/casinos", label: "Casinos" },
   { href: "/admin/storefront", label: "Storefront" },
+  { href: "/admin/cloaker", label: "Cloaker" },
   { href: "/admin/countries", label: "Countries" },
   { href: "/admin/country-codes", label: "Codes" },
   { href: "/admin/bonuses", label: "Bonuses" },
