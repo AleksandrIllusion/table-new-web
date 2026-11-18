@@ -6,10 +6,19 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { casinoFormSchema, type CasinoFormValues } from "@/lib/schemas";
 import { api } from "@/lib/api";
 import { getToken } from "@/lib/auth";
-import { MultiSelect } from "@/components/multi-select";
+import { TagSelect, type TagOption } from "@/components/tag-select";
 import { cx, Field, Modal } from "@/components/ui";
 
 type Ref = { id: number; label: string };
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-xl border border-neutral-800 bg-neutral-950/40 p-4">
+      <div className="mb-3 text-xs uppercase tracking-wide text-neutral-500">{title}</div>
+      <div className="flex flex-col gap-4">{children}</div>
+    </div>
+  );
+}
 
 export interface CasinoModalProps {
   mode: "create" | "edit";
@@ -36,6 +45,8 @@ export function CasinoModal({ mode, casinoId, onClose, onSaved }: CasinoModalPro
   });
 
   const selectedCountry = watch("country_id");
+  const logo = watch("logo_img");
+  const logoOk = typeof logo === "string" && logo.startsWith("https://");
   const scopedCodes = useMemo(
     () => allCodes.filter((c) => Number(c.country_id) === Number(selectedCountry)),
     [allCodes, selectedCountry],
@@ -100,37 +111,58 @@ export function CasinoModal({ mode, casinoId, onClose, onSaved }: CasinoModalPro
         <p className="py-8 text-center text-neutral-400">Loading…</p>
       ) : (
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
-          {text("title", "Title")}
-          {text("link", "Casino link (https://)")}
-          {text("logo_img", "Logo URL (https://)")}
+          <Section title="Casino">
+            {text("title", "Title")}
+            {text("link", "Casino link (https://)")}
+            <div className="flex items-end gap-3">
+              <div className="flex-1">{text("logo_img", "Logo URL (https://)")}</div>
+              <div className="flex h-[42px] w-[56px] shrink-0 items-center justify-center overflow-hidden rounded-lg border border-neutral-700 bg-neutral-900">
+                {logoOk
+                  ? <img src={logo} alt="logo preview" className="max-h-full max-w-full object-contain" />
+                  : <span className="text-[10px] text-neutral-500">logo</span>}
+              </div>
+            </div>
+            {text("casino_rate", "Rating (0–5)", "number")}
+          </Section>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Country" error={errors.country_id?.message}>
-              <select {...register("country_id")} className={cx.input}>
-                <option value="">—</option>
-                {countries.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
-              </select>
-            </Field>
-            <Field label={<>Country code {selectedCountry ? <span className="text-neutral-500">· scoped</span> : null}</>}
-              error={errors.country_code_id?.message}>
-              <select {...register("country_code_id")} disabled={!selectedCountry} className={cx.input}>
-                <option value="">{selectedCountry ? "—" : "Select country first"}</option>
-                {scopedCodes.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
-              </select>
-            </Field>
-          </div>
+          <Section title="Placement">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field label="Country" error={errors.country_id?.message}>
+                <select {...register("country_id")} className={cx.input}>
+                  <option value="">—</option>
+                  {countries.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
+                </select>
+              </Field>
+              <Field label={<>Country code {selectedCountry ? <span className="text-neutral-500">· scoped</span> : null}</>}
+                error={errors.country_code_id?.message}>
+                <select {...register("country_code_id")} disabled={!selectedCountry} className={cx.input}>
+                  <option value="">{selectedCountry ? "—" : "Select country first"}</option>
+                  {scopedCodes.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
+                </select>
+              </Field>
+            </div>
+          </Section>
 
-          {text("casino_rate", "Rating (0–5)", "number")}
-
-          <Controller control={control} name="bonuses" render={({ field }) => (
-            <MultiSelect label="Bonuses" options={bonuses} value={field.value} onChange={field.onChange} error={errors.bonuses?.message} />
-          )} />
-          <Controller control={control} name="features" render={({ field }) => (
-            <MultiSelect label="Features" options={features} value={field.value} onChange={field.onChange} error={errors.features?.message} />
-          )} />
-          <Controller control={control} name="payments" render={({ field }) => (
-            <MultiSelect label="Payments" options={payments} value={field.value} onChange={field.onChange} error={errors.payments?.message} />
-          )} />
+          <Section title="Offer">
+            <Controller control={control} name="features" render={({ field }) => (
+              <TagSelect label="Features" options={features} value={field.value} onChange={field.onChange}
+                error={errors.features?.message}
+                createPath="/features/create" createField="feature"
+                onCreated={(o: TagOption) => setFeatures((s) => [...s, o])} />
+            )} />
+            <Controller control={control} name="bonuses" render={({ field }) => (
+              <TagSelect label="Bonuses" options={bonuses} value={field.value} onChange={field.onChange}
+                error={errors.bonuses?.message}
+                createPath="/bonuses/create" createField="bonus"
+                onCreated={(o: TagOption) => setBonuses((s) => [...s, o])} />
+            )} />
+            <Controller control={control} name="payments" render={({ field }) => (
+              <TagSelect label="Payments" options={payments} value={field.value} onChange={field.onChange}
+                error={errors.payments?.message}
+                createPath="/payments/create" createField="payment"
+                onCreated={(o: TagOption) => setPayments((s) => [...s, o])} />
+            )} />
+          </Section>
 
           <div className="mt-2 flex justify-end gap-2">
             <button type="button" onClick={onClose} className={cx.btnGhost}>Cancel</button>
