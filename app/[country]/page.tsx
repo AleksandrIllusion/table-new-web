@@ -4,8 +4,8 @@ import type { Casino, Theme } from "@/lib/types";
 import { StorefrontHeader, StorefrontCard } from "@/components/storefront";
 
 const FALLBACK: Theme = {
-  header_title: "CASINO", header_brand: "CANADA", tagline: "Play Big. Win Bigger.",
-  pills: ["24/7 Support", "High withdrawal limit", "VIP"],
+  header_title: "CASINO", header_brand: "UNITED KINGDOM", tagline: "Play Big. Win Bigger.",
+  pills: ["24/7 Support", "Fast Withdrawals", "VIP"],
   badges: ["Top choice", "Exclusive", "Best values", "Best withdrawal"],
   logo_url: null, accent_color: "#FFD700", bg_color: "#111111",
   card_from: "#3E0037", card_to: "#0D1341",

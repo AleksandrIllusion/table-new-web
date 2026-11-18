@@ -6,7 +6,7 @@ export default function Home() {
     <main className="mx-auto max-w-3xl px-4 py-16">
       <h1 className="text-3xl font-bold">Casino Platform</h1>
       <p className="mt-3 text-neutral-400">
-        Public listing per country, e.g. <code className="text-neutral-200">/FI</code>.
+        Public listing per country, e.g. <code className="text-neutral-200">/UK</code>.
       </p>
       <div className="mt-6 flex flex-wrap gap-3">
         {STATIC_COUNTRY_CODES.map((c) => (
