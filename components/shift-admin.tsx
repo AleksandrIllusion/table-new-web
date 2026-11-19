@@ -13,14 +13,24 @@ type ShiftRow = {
   country: string;
 };
 
+/** Admin Countries (`cp_countries`) — same list as /admin/countries. */
+type CountryRow = {
+  id: number;
+  country: string;
+};
+
+/** Cloaker geolocation (`cp_geolocation`) — IDs required by /switch create & update. */
 type GeoRow = {
   id: number;
   country: string;
 };
 
+const nameKey = (s: string) => s.trim().toLowerCase();
+
 export function ShiftAdmin() {
   const [items, setItems] = useState<ShiftRow[]>([]);
-  const [countries, setCountries] = useState<GeoRow[]>([]);
+  const [countries, setCountries] = useState<CountryRow[]>([]);
+  const [geos, setGeos] = useState<GeoRow[]>([]);
   const [open, setOpen] = useState(false);
   const [domain, setDomain] = useState("");
   const [countryId, setCountryId] = useState("");
@@ -34,18 +44,54 @@ export function ShiftAdmin() {
   const token = () => getToken();
 
   const countryIdForRow = (row: ShiftRow) => {
-    const match = countries.find((c) => c.country === row.country);
+    const match = countries.find((c) => nameKey(c.country) === nameKey(row.country));
     return match ? String(match.id) : "";
+  };
+
+  const findGeoByName = (list: GeoRow[], country: string) =>
+    list.find((g) => nameKey(g.country) === nameKey(country));
+
+  /**
+   * Switch APIs key off cp_geolocation ids, while the dropdown shows cp_countries
+   * (same as Countries admin). Ensure a geo row exists for the chosen name.
+   */
+  const resolveGeoId = async (countryName: string): Promise<{ id: number; list: GeoRow[] }> => {
+    const existing = findGeoByName(geos, countryName);
+    if (existing) return { id: existing.id, list: geos };
+
+    try {
+      const created = await api<GeoRow>("/switch/cloaker-countries/create", {
+        method: "POST",
+        token: token(),
+        body: JSON.stringify({ country: countryName.trim() }),
+      });
+      const list = [...geos, created];
+      setGeos(list);
+      return { id: created.id, list };
+    } catch {
+      // Race / already exists — refresh and look up by name.
+      const refreshed = await api<GeoRow[]>("/switch/cloaker-countries", { token: token() });
+      const list = Array.isArray(refreshed) ? refreshed : [];
+      setGeos(list);
+      const found = findGeoByName(list, countryName);
+      if (!found) {
+        throw new Error(`Could not resolve geolocation for ${countryName}`);
+      }
+      return { id: found.id, list };
+    }
   };
 
   const load = async () => {
     try {
-      const [rows, geos] = await Promise.all([
+      const [rows, countryList, geoList] = await Promise.all([
         api<ShiftRow[]>("/switch/get-all-cloaks", { token: token() }),
+        // Same source as Admin → Countries (not cloaker-countries / cp_geolocation).
+        api<CountryRow[]>("/countries"),
         api<GeoRow[]>("/switch/cloaker-countries", { token: token() }),
       ]);
       setItems(Array.isArray(rows) ? rows : []);
-      setCountries(Array.isArray(geos) ? geos : []);
+      setCountries(Array.isArray(countryList) ? countryList : []);
+      setGeos(Array.isArray(geoList) ? geoList : []);
     } catch (e) {
       setMsg({ kind: "err", text: e instanceof Error ? e.message : "Failed to load" });
     }
@@ -85,28 +131,27 @@ export function ShiftAdmin() {
     if (nextCountryId === currentId) return;
 
     const selected = countries.find((c) => String(c.id) === nextCountryId);
+    if (!selected) return;
+
     setMsg(null);
     setUpdatingCountryId(row.id);
     try {
-      // Nest UpdateCloakCountryDto: { cloaker_id, country_id }
+      const { id: geoId } = await resolveGeoId(selected.country);
+      // Nest UpdateCloakCountryDto: { cloaker_id, country_id } — country_id is geolocation id
       await api<GeoRow>("/switch/update-cloak-country", {
         method: "PUT",
         token: token(),
         body: JSON.stringify({
           cloaker_id: row.id,
-          country_id: Number(nextCountryId),
+          country_id: geoId,
         }),
       });
       setItems((prev) =>
-        prev.map((r) =>
-          r.id === row.id
-            ? { ...r, country: selected?.country ?? r.country }
-            : r,
-        ),
+        prev.map((r) => (r.id === row.id ? { ...r, country: selected.country } : r)),
       );
       setMsg({
         kind: "ok",
-        text: `Country updated for ${row.domain}${selected ? ` → ${selected.country}` : ""}`,
+        text: `Country updated for ${row.domain} → ${selected.country}`,
       });
     } catch (e) {
       setMsg({ kind: "err", text: e instanceof Error ? e.message : "Country update failed" });
@@ -131,15 +176,21 @@ export function ShiftAdmin() {
     e.preventDefault();
     setMsg(null);
     if (!validate()) return;
+    const selected = countries.find((c) => String(c.id) === countryId);
+    if (!selected) {
+      setErrors({ country_id: "Country is required" });
+      return;
+    }
     setSaving(true);
     try {
-      // Nest CreateCloakDto: { domain, country_id, cloaker }
+      const { id: geoId } = await resolveGeoId(selected.country);
+      // Nest CreateCloakDto: { domain, country_id, cloaker } — country_id is geolocation id
       await api("/switch/create", {
         method: "POST",
         token: token(),
         body: JSON.stringify({
           domain: domain.trim().toLowerCase(),
-          country_id: Number(countryId),
+          country_id: geoId,
           cloaker: shiftOn,
         }),
       });
@@ -279,9 +330,11 @@ export function ShiftAdmin() {
             </Field>
             {countries.length === 0 && (
               <p className="text-sm text-amber-200/90">
-                No geolocation rows yet. Seed via{" "}
-                <code className="text-xs">POST /switch/cloaker-countries/create</code>{" "}
-                with <code className="text-xs">{`{ "country": "United Kingdom" }`}</code>.
+                No countries yet. Add them under{" "}
+                <a href="/admin/countries" className="underline hover:text-amber-100">
+                  Admin → Countries
+                </a>
+                .
               </p>
             )}
             <label className="flex items-center gap-3 text-sm text-neutral-300">
