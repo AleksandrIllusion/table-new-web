@@ -99,7 +99,7 @@ export function StorefrontHeader({ theme }: { theme: Theme }) {
         padding: pad,
         marginBottom: mb,
       }}>
-      {theme.logo_url && <img src={theme.logo_url} alt="" className="mx-auto mb-3 h-10 w-auto object-contain" />}
+      {theme.logo_url?.trim() ? <img src={theme.logo_url.trim()} alt="" className="mx-auto mb-3 h-10 w-auto object-contain" /> : null}
       <div style={{ fontFamily: ff(theme.font_heading), letterSpacing: 6 }}>
         <div className="text-xs" style={{ color: "#b9b9b9", letterSpacing: 8 }}>{theme.header_title}</div>
         <div className="mt-0.5 text-3xl" style={{ color: theme.accent_color }}>{theme.header_brand}</div>

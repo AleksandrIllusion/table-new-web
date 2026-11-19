@@ -99,7 +99,7 @@ export default function StorefrontThemePage() {
               <Field label="Title"><input value={theme.header_title} onChange={(e) => set("header_title", e.target.value)} className={cx.input} /></Field>
               <Field label="Brand"><input value={theme.header_brand} onChange={(e) => set("header_brand", e.target.value)} className={cx.input} /></Field>
               <Field label="Tagline"><input value={theme.tagline} onChange={(e) => set("tagline", e.target.value)} className={cx.input} /></Field>
-              <Field label="Logo URL"><input value={theme.logo_url ?? ""} onChange={(e) => set("logo_url", e.target.value)} className={cx.input} /></Field>
+              <Field label="Logo URL"><input value={theme.logo_url ?? ""} onChange={(e) => set("logo_url", e.target.value.trim() ? e.target.value.trim() : null)} className={cx.input} /></Field>
               <Field label="Header pills (comma-separated)"><input value={theme.pills.join(", ")} onChange={(e) => list("pills", e.target.value)} className={cx.input} /></Field>
               <Field label={`Header padding (${theme.header_padding}px)`}>
                 <input type="range" min={8} max={80} value={theme.header_padding}
