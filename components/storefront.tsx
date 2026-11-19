@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import type { Casino, Theme } from "@/lib/types";
+import { PLAY_ICON_MAP } from "@/lib/play-icons";
 
 const ff = (name: string) => `"${name}", serif`;
 
@@ -14,12 +15,13 @@ function Stars({ rate, color }: { rate: number; color: string }) {
   );
 }
 
-function LogoTile({ src, title, accent }: { src: string | null; title: string; accent: string }) {
+function LogoTile({ src, title, accent, anim }: { src: string | null; title: string; accent: string; anim: string }) {
   const [broken, setBroken] = useState(false);
+  const animCls = anim && anim !== "none" ? `sf-logo-${anim}` : "";
   const ok = !!src && src.startsWith("https://") && !broken;
   if (ok) {
     return (
-      <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-black/40">
+      <div className={`flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-black/40 ${animCls}`}>
         <img src={src as string} alt={title} onError={() => setBroken(true)}
           className="max-h-full max-w-full object-contain" />
       </div>
@@ -27,9 +29,60 @@ function LogoTile({ src, title, accent }: { src: string | null; title: string; a
   }
   const initials = title.replace(/[^a-zA-Z0-9 ]/g, "").split(/\s+/).map((w) => w[0]).slice(0, 2).join("").toUpperCase() || "C";
   return (
-    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-white/10"
+    <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-white/10 ${animCls}`}
       style={{ background: `linear-gradient(145deg, ${accent}22, #000)`, color: accent, fontWeight: 700 }}>
       {initials}
+    </div>
+  );
+}
+
+// Иконка платёжки: прячется, если ссылка битая или картинка не загрузилась (частый случай у Simple Icons).
+function PaymentIcon({ src, alt }: { src: string; alt: string }) {
+  const [broken, setBroken] = useState(false);
+  if (broken || !src.startsWith("https://")) return null;
+  return (
+    <img src={src} alt={alt} title={alt} onError={() => setBroken(true)}
+      className="h-5 w-auto shrink-0 object-contain opacity-90" />
+  );
+}
+
+/**
+ * Горизонтальный ряд, который сам измеряет переполнение: пока элементы влезают —
+ * обычная строка (с выравниванием align), как только не влезают — плавная
+ * бегущая строка с паузой при наведении и уважением к prefers-reduced-motion.
+ */
+function Marquee({ children, align = "left", gap = 12 }: { children: ReactNode; align?: "left" | "center" | "right"; gap?: number }) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const blockRef = useRef<HTMLDivElement>(null);
+  const [animate, setAnimate] = useState(false);
+  const [dur, setDur] = useState(22);
+
+  useEffect(() => {
+    const wrap = wrapRef.current, block = blockRef.current;
+    if (!wrap || !block) return;
+    const measure = () => {
+      const single = block.scrollWidth;
+      const overflow = single > wrap.clientWidth + 4;
+      setAnimate(overflow);
+      setDur(Math.max(12, Math.round(single / 40))); // ~40px/сек
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(wrap);
+    return () => ro.disconnect();
+  }, [children]);
+
+  const justify = align === "center" ? "center" : align === "right" ? "flex-end" : "flex-start";
+  const blockStyle: CSSProperties = { display: "flex", gap, flexShrink: 0, alignItems: "center" };
+
+  return (
+    <div ref={wrapRef} className="sf-marquee">
+      <div className={animate ? "sf-marquee-track sf-marquee-anim" : "sf-marquee-track"}
+        style={{ width: animate ? "max-content" : "100%", justifyContent: animate ? "flex-start" : justify,
+                 ["--marq-dur" as any]: `${dur}s` }}>
+        <div ref={blockRef} style={blockStyle}>{children}</div>
+        {animate && <div aria-hidden style={{ ...blockStyle, paddingLeft: gap }}>{children}</div>}
+      </div>
     </div>
   );
 }
@@ -69,11 +122,22 @@ function parseBonus(text?: string) {
   return { percent, amount, spins };
 }
 
+// Угол для corner-бейджа + скруглённый внутренний угол.
+function badgeCorner(pos: Theme["badge_position"]): CSSProperties {
+  switch (pos) {
+    case "tl": return { top: 0, left: 0, borderBottomRightRadius: 14 };
+    case "bl": return { bottom: 0, left: 0, borderTopRightRadius: 14 };
+    case "br": return { bottom: 0, right: 0, borderTopLeftRadius: 14 };
+    case "tr":
+    default:   return { top: 0, right: 0, borderBottomLeftRadius: 14 };
+  }
+}
+
 export function StorefrontCard({ casino, idx, theme }: { casino: Casino; idx: number; theme: Theme }) {
   const badge = theme.badges[idx];
   const primary = idx === 0;
   const btnColor = primary ? theme.button_primary : theme.button_secondary;
-  const btnText = primary ? "#fff" : "#161616";
+  const btnText = primary ? theme.button_fg : theme.button_fg2;
   const safeLink = casino.link?.startsWith("https://") ? casino.link : undefined;
   const headline = casino.bonuses[0]?.bonus;
   const { percent, amount, spins } = parseBonus(headline);
@@ -84,6 +148,29 @@ export function StorefrontCard({ casino, idx, theme }: { casino: Casino; idx: nu
   const headFont = ff(theme.font_heading);
   const bodyFont = ff(theme.font_body);
 
+  const ratingLeft = theme.rating_position === "left";
+  const bonusCenter = theme.bonus_align === "center";
+  const btnSize =
+    theme.button_size === "sm" ? "px-6 py-2.5 text-base"
+    : theme.button_size === "lg" ? "px-10 py-5 text-xl"
+    : "px-8 py-4 text-lg";
+  const btnAnim = theme.button_anim !== "none" ? `sf-btn-${theme.button_anim}` : "";
+  const icoAnim = theme.button_icon_anim !== "none" ? `sf-ico-${theme.button_icon_anim}` : "";
+  const icoSize = theme.button_icon_size;
+  const buttonIcon = theme.button_icon
+    ? theme.button_icon.startsWith("http")
+      ? <img src={theme.button_icon} alt="" className={icoAnim} style={{ height: icoSize, width: "auto", objectFit: "contain", flex: "none" }} />
+      : PLAY_ICON_MAP[theme.button_icon]
+        ? <svg viewBox="0 0 24 24" width={icoSize} height={icoSize} fill="currentColor" aria-hidden
+            className={icoAnim} style={{ flex: "none" }}
+            dangerouslySetInnerHTML={{ __html: PLAY_ICON_MAP[theme.button_icon] }} />
+        : null
+    : null;
+
+  const paymentIcons = casino.payments
+    .filter((p) => !!p.payment_link)
+    .map((p) => <PaymentIcon key={p.id} src={p.payment_link as string} alt={p.payment} />);
+
   return (
     <article className={`sf-card relative overflow-hidden border ${primary ? "sf-top" : ""}`}
       style={{
@@ -93,19 +180,20 @@ export function StorefrontCard({ casino, idx, theme }: { casino: Casino; idx: nu
         ["--card-accent" as any]: theme.accent_color,
       }}>
       {badge && theme.badge_style === "corner" && (
-        <span className="absolute right-0 top-0 px-4 py-1.5 text-sm font-medium"
-          style={{ background: theme.accent_color, color: "#111", borderBottomLeftRadius: 14 }}>{badge}</span>
+        <span className="absolute z-10 px-4 py-1.5 text-sm font-medium"
+          style={{ ...badgeCorner(theme.badge_position), background: theme.accent_color, color: "#111" }}>{badge}</span>
       )}
 
       {/* header */}
-      <div className="flex items-center justify-between gap-3 p-5">
+      <div className="flex items-center justify-between gap-3 p-5"
+        style={{ flexDirection: ratingLeft ? "row-reverse" : "row" }}>
         <div className="flex items-center gap-3">
-          {theme.show_logo && <LogoTile src={casino.logo_img} title={casino.title} accent={theme.accent_color} />}
+          {theme.show_logo && <LogoTile src={casino.logo_img} title={casino.title} accent={theme.accent_color} anim={theme.logo_anim} />}
           <div className="text-lg font-semibold text-white" style={{ fontFamily: headFont, letterSpacing: 0.5 }}>
             {casino.title}
           </div>
         </div>
-        <div className="sf-rate rounded-2xl border px-4 py-2 text-center"
+        <div className="sf-rate shrink-0 rounded-2xl border px-4 py-2 text-center"
           style={{ borderColor: theme.accent_color, background: "linear-gradient(180deg, #221a06, #000)",
                    boxShadow: `0 0 18px ${theme.accent_color}22` }}>
           <div className="leading-none" style={{ color: theme.accent_color, fontFamily: headFont, fontSize: 30 }}>
@@ -124,11 +212,11 @@ export function StorefrontCard({ casino, idx, theme }: { casino: Casino; idx: nu
 
       {/* welcome bonus */}
       {!compact && headline && (
-        <div className="px-5 pt-5" style={{ background: grad }}>
+        <div className="px-5 pt-5" style={{ background: grad, textAlign: theme.bonus_align }}>
           <div className="text-[11px] font-medium tracking-[0.2em] text-white/70">WELCOME BONUS</div>
 
           {percent ? (
-            <div className="mt-1.5 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <div className={`mt-1.5 flex flex-wrap items-baseline gap-x-3 gap-y-1 ${bonusCenter ? "justify-center" : ""}`}>
               <span className="leading-none text-white"
                 style={{ fontFamily: headFont, fontSize: theme.heading_size }}>{percent}</span>
               {amount && (
@@ -138,7 +226,6 @@ export function StorefrontCard({ casino, idx, theme }: { casino: Casino; idx: nu
               )}
             </div>
           ) : (
-            // нет процента — показываем текст компактно, в 2 строки максимум
             <div className="mt-1.5 line-clamp-2 text-xl leading-snug text-white"
               style={{ fontFamily: headFont }}>{headline}</div>
           )}
@@ -151,36 +238,41 @@ export function StorefrontCard({ casino, idx, theme }: { casino: Casino; idx: nu
         </div>
       )}
 
-      {/* features */}
-      <div className="flex flex-wrap gap-2 px-5 py-4" style={compact ? undefined : { background: grad }}>
-        {casino.features.map((f) => (
-          <span key={f.id} className="border px-3 py-1.5 text-sm text-white"
-            style={{ borderColor: "#ffffff2e", borderRadius: pillRadius, background: "rgba(255,255,255,.04)" }}>
-            ⚡ {f.feature}
-          </span>
-        ))}
-      </div>
+      {/* features — single row, auto-scrolls when it overflows */}
+      {casino.features.length > 0 && (
+        <div className="px-5 py-4" style={compact ? undefined : { background: grad }}>
+          <Marquee align={bonusCenter ? "center" : "left"} gap={8}>
+            {casino.features.map((f) => (
+              <span key={f.id} className="whitespace-nowrap border px-3 py-1.5 text-sm text-white"
+                style={{ borderColor: "#ffffff2e", borderRadius: pillRadius, background: "rgba(255,255,255,.04)" }}>
+                ⚡ {f.feature}
+              </span>
+            ))}
+          </Marquee>
+        </div>
+      )}
 
-      {/* payments */}
-      {theme.show_payments && casino.payments.some((p) => p.payment_link) && (
-        <div className="flex flex-wrap items-center gap-3 px-5 py-3">
-          {casino.payments.filter((p) => p.payment_link?.startsWith("https://")).map((p) => (
-            <img key={p.id} src={p.payment_link as string} alt={p.payment}
-              className="h-5 w-auto object-contain opacity-90" />
-          ))}
+      {/* payments — single row, auto-scrolls when it overflows */}
+      {theme.show_payments && paymentIcons.length > 0 && (
+        <div className="px-5 py-3">
+          <Marquee align={theme.payments_align} gap={14}>{paymentIcons}</Marquee>
         </div>
       )}
 
       {/* CTA */}
-      <div className="p-5 pt-1">
+      <div className="p-5 pt-1" style={{ textAlign: theme.button_align }}>
         {safeLink ? (
           <a href={safeLink} target="_blank" rel="noopener noreferrer sponsored"
-            className={`sf-cta ${primary ? "sf-cta--top" : ""} block rounded-full py-4 text-center text-lg font-semibold transition hover:brightness-110`}
+            className={`sf-cta ${primary ? "sf-cta--top" : ""} ${btnAnim} ${theme.button_full ? "block w-full" : "inline-block"} rounded-full text-center font-semibold transition hover:brightness-110 ${btnSize}`}
             style={{ background: `linear-gradient(180deg, ${btnColor}, ${btnColor}cc)`, color: btnText, fontFamily: headFont, letterSpacing: 1 }}>
-            {theme.button_text} ›
+            <span className="inline-flex items-center justify-center gap-2 align-middle">
+              {buttonIcon && theme.button_icon_pos === "left" && buttonIcon}
+              <span>{theme.button_text} ›</span>
+              {buttonIcon && theme.button_icon_pos === "right" && buttonIcon}
+            </span>
           </a>
         ) : (
-          <span className="block rounded-full bg-neutral-800 py-4 text-center text-neutral-400">Unavailable</span>
+          <span className={`${theme.button_full ? "block w-full" : "inline-block"} rounded-full bg-neutral-800 ${btnSize} text-center text-neutral-400`}>Unavailable</span>
         )}
       </div>
     </article>

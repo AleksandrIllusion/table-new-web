@@ -10,9 +10,15 @@ const FALLBACK: Theme = {
   logo_url: null, accent_color: "#FFD700", bg_color: "#111111",
   card_from: "#3E0037", card_to: "#0D1341",
   button_text: "PLAY NOW", button_primary: "#16A34A", button_secondary: "#FFD700",
+  button_fg: "#FFFFFF", button_fg2: "#161616",
   card_variant: "classic", card_radius: 18, badge_style: "bar", pill_shape: "pill",
   show_logo: true, show_payments: true,
   font_heading: "Aboreto", font_body: "Inter", heading_size: 38,
+  badge_position: "tr", rating_position: "right",
+  button_size: "md", button_align: "center", button_full: true,
+  payments_align: "left", bonus_align: "left",
+  logo_anim: "none", button_anim: "none",
+  button_icon: "", button_icon_pos: "left", button_icon_size: 20, button_icon_anim: "none",
 };
 
 /** Required for `output: 'export'` — only these codes are written into `out/`. */
