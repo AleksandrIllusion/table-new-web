@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { CasinoModal } from "@/components/casino-modal";
-import { cx, PageHeader } from "@/components/ui";
+import { cx, Field, PageHeader } from "@/components/ui";
 
 type Row = { id?: number; casino_id?: number; title: string; casino_rate: number };
 type Code = { id: number; country_code: string };
@@ -14,11 +14,19 @@ export default function CasinosAdminPage() {
   const [selectedCode, setSelectedCode] = useState<string>(""); // "" = все казино
   const [rows, setRows] = useState<Row[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [okMsg, setOkMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState<number | null>(null); // id казино, по которому идёт запрос
   const [modal, setModal] = useState<{ mode: "create" | "edit"; id?: number } | null>(null);
+  const [copyTargetId, setCopyTargetId] = useState("");
+  const [copying, setCopying] = useState(false);
 
   const selectedCodeId = useMemo(
     () => codes.find((c) => c.country_code === selectedCode)?.id,
+    [codes, selectedCode],
+  );
+
+  const otherCodes = useMemo(
+    () => codes.filter((c) => c.country_code !== selectedCode),
     [codes, selectedCode],
   );
 
@@ -45,7 +53,12 @@ export default function CasinosAdminPage() {
       try { setCodes(await api<Code[]>("/country-codes")); } catch { /* пусто */ }
     })();
   }, []);
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [selectedCode]);
+  useEffect(() => {
+    setCopyTargetId("");
+    setOkMsg(null);
+    load();
+    /* eslint-disable-next-line */
+  }, [selectedCode]);
 
   const rowId = (r: Row) => (r.casino_id ?? r.id) as number;
 
@@ -80,6 +93,42 @@ export default function CasinosAdminPage() {
     window.open(`/${selectedCode}`, "_blank", "noopener,noreferrer");
   };
 
+  const copyStorefront = async () => {
+    if (!selectedCodeId || !copyTargetId) return;
+    const target = codes.find((c) => String(c.id) === copyTargetId);
+    if (!target) return;
+    if (
+      !confirm(
+        `Replace ${target.country_code} storefront list with ${selectedCode}’s ${rows.length} casino(s)? Existing ${target.country_code} links will be overwritten.`,
+      )
+    ) {
+      return;
+    }
+    setCopying(true);
+    setError(null);
+    setOkMsg(null);
+    try {
+      const res = await api<{ casinos_copied: number; target: Code }>(
+        "/country-codes/copy-storefront",
+        {
+          method: "POST",
+          token: getToken(),
+          body: JSON.stringify({
+            source_country_code_id: selectedCodeId,
+            target_country_code_id: Number(copyTargetId),
+          }),
+        },
+      );
+      setOkMsg(
+        `Copied ${res.casinos_copied} casino(s) from ${selectedCode} → ${target.country_code}.`,
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to copy storefront");
+    } finally {
+      setCopying(false);
+    }
+  };
+
   const ordering = !!selectedCode;
 
   return (
@@ -104,6 +153,34 @@ export default function CasinosAdminPage() {
           Reordering <span className="text-neutral-200">{selectedCode}</span> — arrows change the casino’s position (rating) on the storefront.
         </p>
       )}
+      {ordering && otherCodes.length > 0 && (
+        <div className={`mb-4 flex flex-wrap items-end gap-3 ${cx.card} p-4`}>
+          <Field label="Copy storefront to">
+            <select
+              value={copyTargetId}
+              onChange={(e) => setCopyTargetId(e.target.value)}
+              className={cx.input}
+            >
+              <option value="">— target country code —</option>
+              {otherCodes.map((c) => (
+                <option key={c.id} value={c.id}>{c.country_code}</option>
+              ))}
+            </select>
+          </Field>
+          <button
+            type="button"
+            disabled={!copyTargetId || copying || rows.length === 0}
+            onClick={copyStorefront}
+            className={cx.btnPrimary}
+          >
+            {copying ? "Copying…" : "Copy list"}
+          </button>
+          <p className="basis-full text-xs text-neutral-500">
+            Overwrites the target code’s casino links with this country’s current list (ratings are shared globally).
+          </p>
+        </div>
+      )}
+      {okMsg && <p className={`mb-4 ${cx.okBox}`}>{okMsg}</p>}
       {error && <p className={`mb-4 ${cx.errorBox}`}>{error}</p>}
 
       <div className={`overflow-hidden ${cx.card}`}>

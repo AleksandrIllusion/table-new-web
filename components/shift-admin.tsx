@@ -29,8 +29,14 @@ export function ShiftAdmin() {
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
   const [togglingId, setTogglingId] = useState<number | null>(null);
+  const [updatingCountryId, setUpdatingCountryId] = useState<number | null>(null);
 
   const token = () => getToken();
+
+  const countryIdForRow = (row: ShiftRow) => {
+    const match = countries.find((c) => c.country === row.country);
+    return match ? String(match.id) : "";
+  };
 
   const load = async () => {
     try {
@@ -70,6 +76,42 @@ export function ShiftAdmin() {
       setMsg({ kind: "err", text: e instanceof Error ? e.message : "Toggle failed" });
     } finally {
       setTogglingId(null);
+    }
+  };
+
+  const changeCountry = async (row: ShiftRow, nextCountryId: string) => {
+    if (!nextCountryId) return;
+    const currentId = countryIdForRow(row);
+    if (nextCountryId === currentId) return;
+
+    const selected = countries.find((c) => String(c.id) === nextCountryId);
+    setMsg(null);
+    setUpdatingCountryId(row.id);
+    try {
+      // Nest UpdateCloakCountryDto: { cloaker_id, country_id }
+      await api<GeoRow>("/switch/update-cloak-country", {
+        method: "PUT",
+        token: token(),
+        body: JSON.stringify({
+          cloaker_id: row.id,
+          country_id: Number(nextCountryId),
+        }),
+      });
+      setItems((prev) =>
+        prev.map((r) =>
+          r.id === row.id
+            ? { ...r, country: selected?.country ?? r.country }
+            : r,
+        ),
+      );
+      setMsg({
+        kind: "ok",
+        text: `Country updated for ${row.domain}${selected ? ` → ${selected.country}` : ""}`,
+      });
+    } catch (e) {
+      setMsg({ kind: "err", text: e instanceof Error ? e.message : "Country update failed" });
+    } finally {
+      setUpdatingCountryId(null);
     }
   };
 
@@ -119,7 +161,7 @@ export function ShiftAdmin() {
     <main className="px-4 py-10">
       <PageHeader
         title="Shift"
-        subtitle="Enable or disable shift per domain"
+        subtitle="Set country and enable or disable shift per domain"
         action={
           <button
             onClick={() => {
@@ -160,11 +202,33 @@ export function ShiftAdmin() {
             )}
             {items.map((row) => {
               const on = Boolean(row.cloaker);
+              const selectedCountryId = countryIdForRow(row);
               return (
                 <tr key={row.id} className="hover:bg-white/[0.03]">
                   <td className="p-3 text-neutral-500">{row.id}</td>
                   <td className="p-3 font-medium text-white">{row.domain}</td>
-                  <td className="p-3 text-neutral-300">{row.country}</td>
+                  <td className="p-3">
+                    {countries.length === 0 ? (
+                      <span className="text-neutral-300">{row.country}</span>
+                    ) : (
+                      <select
+                        value={selectedCountryId}
+                        disabled={updatingCountryId === row.id}
+                        onChange={(e) => changeCountry(row, e.target.value)}
+                        aria-label={`Country for ${row.domain}`}
+                        className={`${cx.input} min-w-[10rem] py-1.5 text-sm disabled:opacity-50`}
+                      >
+                        {!selectedCountryId && (
+                          <option value="">{row.country || "—"}</option>
+                        )}
+                        {countries.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.country}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </td>
                   <td className="p-3">
                     <button
                       type="button"
