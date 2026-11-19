@@ -44,9 +44,17 @@ const ISO_SUGGESTIONS = [
   "CH",
 ] as const;
 
-const ISO_RE = /^[A-Za-z]{2}$/;
+/** Matches Nest CreateGeolocationDto: 2–10 letter ISO code (CY, GB, UK, …). */
+const ISO_RE = /^[A-Za-z]{2,10}$/;
 
 const normalizeCode = (value: string) => value.trim().toUpperCase();
+
+/** True when value is already a code, not a legacy display name (e.g. Cyprus). */
+const isIsoCode = (value: string) => ISO_RE.test(value.trim());
+
+/** Draft value for the code field — never show uppercased display names as codes. */
+const codeDraftFromStored = (stored: string) =>
+  isIsoCode(stored) ? normalizeCode(stored) : "";
 
 export function ShiftAdmin() {
   const [items, setItems] = useState<ShiftRow[]>([]);
@@ -104,7 +112,7 @@ export function ShiftAdmin() {
       setItems(nextRows);
       setGeos(Array.isArray(geoList) ? geoList : []);
       setDraftCodes(
-        Object.fromEntries(nextRows.map((r) => [r.id, normalizeCode(r.country) || r.country])),
+        Object.fromEntries(nextRows.map((r) => [r.id, codeDraftFromStored(r.country)])),
       );
     } catch (e) {
       setMsg({ kind: "err", text: e instanceof Error ? e.message : "Failed to load" });
@@ -129,7 +137,7 @@ export function ShiftAdmin() {
       if (Array.isArray(next)) {
         setItems(next);
         setDraftCodes(
-          Object.fromEntries(next.map((r) => [r.id, normalizeCode(r.country) || r.country])),
+          Object.fromEntries(next.map((r) => [r.id, codeDraftFromStored(r.country)])),
         );
       } else await load();
       setMsg({
@@ -147,11 +155,21 @@ export function ShiftAdmin() {
     const iso = normalizeCode(rawCode);
     setDraftCodes((prev) => ({ ...prev, [row.id]: iso }));
 
-    if (!ISO_RE.test(iso)) {
-      setMsg({ kind: "err", text: "Country code must be a 2-letter ISO code (e.g. CY, GB)" });
+    if (!iso) {
+      // Empty blur on a legacy name row — keep field empty; do not write.
+      if (!isIsoCode(row.country)) return;
+      setMsg({ kind: "err", text: "Country code is required (e.g. CY, GB)" });
+      setDraftCodes((prev) => ({ ...prev, [row.id]: codeDraftFromStored(row.country) }));
       return;
     }
-    if (normalizeCode(row.country) === iso) return;
+    if (!isIsoCode(iso)) {
+      setMsg({
+        kind: "err",
+        text: "Country code must be 2–10 letters (e.g. CY, GB) — not a display name",
+      });
+      return;
+    }
+    if (isIsoCode(row.country) && normalizeCode(row.country) === iso) return;
 
     setMsg(null);
     setUpdatingCountryId(row.id);
@@ -174,7 +192,7 @@ export function ShiftAdmin() {
         text: `Country code updated for ${row.domain} → ${iso}`,
       });
     } catch (e) {
-      setDraftCodes((prev) => ({ ...prev, [row.id]: normalizeCode(row.country) || row.country }));
+      setDraftCodes((prev) => ({ ...prev, [row.id]: codeDraftFromStored(row.country) }));
       setMsg({ kind: "err", text: e instanceof Error ? e.message : "Country update failed" });
     } finally {
       setUpdatingCountryId(null);
@@ -190,7 +208,7 @@ export function ShiftAdmin() {
     }
     const iso = normalizeCode(countryCode);
     if (!iso) errs.country_code = "Country code is required";
-    else if (!ISO_RE.test(iso)) errs.country_code = "Use a 2-letter ISO code (e.g. CY, GB)";
+    else if (!isIsoCode(iso)) errs.country_code = "Use a 2–10 letter ISO code (e.g. CY, GB)";
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -278,33 +296,46 @@ export function ShiftAdmin() {
             )}
             {items.map((row) => {
               const on = Boolean(row.cloaker);
-              const draft = draftCodes[row.id] ?? row.country;
+              const draft = draftCodes[row.id] ?? codeDraftFromStored(row.country);
+              const legacyName = !isIsoCode(row.country) ? row.country : null;
               return (
                 <tr key={row.id} className="hover:bg-white/[0.03]">
                   <td className="p-3 text-neutral-500">{row.id}</td>
                   <td className="p-3 font-medium text-white">{row.domain}</td>
                   <td className="p-3">
-                    <input
-                      list="shift-iso-codes"
-                      value={draft}
-                      maxLength={2}
-                      disabled={updatingCountryId === row.id}
-                      onChange={(e) =>
-                        setDraftCodes((prev) => ({
-                          ...prev,
-                          [row.id]: e.target.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 2),
-                        }))
-                      }
-                      onBlur={() => changeCountryCode(row, draft)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.currentTarget.blur();
+                    <div className="flex flex-col gap-1">
+                      <input
+                        list="shift-iso-codes"
+                        value={draft}
+                        maxLength={10}
+                        disabled={updatingCountryId === row.id}
+                        onChange={(e) =>
+                          setDraftCodes((prev) => ({
+                            ...prev,
+                            [row.id]: e.target.value
+                              .toUpperCase()
+                              .replace(/[^A-Z]/g, "")
+                              .slice(0, 10),
+                          }))
                         }
-                      }}
-                      aria-label={`Country code for ${row.domain}`}
-                      placeholder="CY"
-                      className={`${cx.input} w-[4.5rem] py-1.5 text-center font-mono uppercase tracking-wider disabled:opacity-50`}
-                    />
+                        onBlur={() => changeCountryCode(row, draft)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.currentTarget.blur();
+                          }
+                        }}
+                        aria-label={`Country code for ${row.domain}`}
+                        placeholder="CY"
+                        className={`${cx.input} w-[5.5rem] py-1.5 text-center font-mono uppercase tracking-wider disabled:opacity-50 ${
+                          legacyName ? "border-amber-500/40" : ""
+                        }`}
+                      />
+                      {legacyName && (
+                        <span className="text-[11px] text-amber-200/80">
+                          was “{legacyName}” — set ISO code (exact match)
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="p-3">
                     <button
@@ -349,9 +380,11 @@ export function ShiftAdmin() {
               <input
                 list="shift-iso-codes"
                 value={countryCode}
-                maxLength={2}
+                maxLength={10}
                 onChange={(e) =>
-                  setCountryCode(e.target.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 2))
+                  setCountryCode(
+                    e.target.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 10),
+                  )
                 }
                 placeholder="CY"
                 aria-invalid={!!errors.country_code}
@@ -359,7 +392,7 @@ export function ShiftAdmin() {
               />
             </Field>
             <p className="text-xs text-neutral-500">
-              Must match FE visitor country (e.g. CY for Cyprus, GB for United Kingdom).
+              Exact match to FE visitor country (e.g. CY, GB) — no display names.
             </p>
             <label className="flex items-center gap-3 text-sm text-neutral-300">
               <input
