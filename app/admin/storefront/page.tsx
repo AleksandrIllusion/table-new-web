@@ -31,6 +31,8 @@ const DEFAULTS = {
   logo_anim: "none", button_anim: "none",
   button_fg: "#FFFFFF", button_fg2: "#161616",
   button_icon: "", button_icon_pos: "left", button_icon_size: 20, button_icon_anim: "none",
+  logo_size: 56, logo_order: "before", show_title: true, rating_size: 30, show_rating: true,
+  rating_style: "box",
 } as const;
 
 export default function StorefrontThemePage() {
@@ -130,6 +132,12 @@ export default function StorefrontThemePage() {
               <label className="flex items-center gap-2 text-sm text-neutral-300">
                 <input type="checkbox" checked={theme.show_payments} onChange={(e) => set("show_payments", e.target.checked)} /> Show payments
               </label>
+              <label className="flex items-center gap-2 text-sm text-neutral-300">
+                <input type="checkbox" checked={theme.show_title} onChange={(e) => set("show_title", e.target.checked)} /> Show casino name
+              </label>
+              <label className="flex items-center gap-2 text-sm text-neutral-300">
+                <input type="checkbox" checked={theme.show_rating} onChange={(e) => set("show_rating", e.target.checked)} /> Show rating
+              </label>
             </div>
           </div>
 
@@ -153,6 +161,19 @@ export default function StorefrontThemePage() {
               <label className="flex items-center gap-2 text-sm text-neutral-300">
                 <input type="checkbox" checked={theme.button_full} onChange={(e) => set("button_full", e.target.checked)} /> Full-width button
               </label>
+              <Field label={`Logo size (${theme.logo_size}px)`}>
+                <input type="range" min={32} max={96} value={theme.logo_size}
+                  onChange={(e) => set("logo_size", Number(e.target.value))} className="w-full" />
+              </Field>
+              {sel("logo_order", "Logo order", [
+                { value: "before", label: "Logo before name" }, { value: "after", label: "Logo after name" }])}
+              {sel("rating_style", "Rating style", [
+                { value: "box", label: "Box + stars" }, { value: "stars", label: "Stars" },
+                { value: "badge", label: "Badge" }, { value: "minimal", label: "Number only" }, { value: "bar", label: "Bar" }])}
+              <Field label={`Rating size (${theme.rating_size}px)`}>
+                <input type="range" min={18} max={48} value={theme.rating_size}
+                  onChange={(e) => set("rating_size", Number(e.target.value))} className="w-full" />
+              </Field>
             </div>
             <p className="mt-2 text-xs text-neutral-500">Badge corner applies to the “Corner” badge style. Button alignment takes effect when “Full-width” is off.</p>
           </div>
