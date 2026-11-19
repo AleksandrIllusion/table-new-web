@@ -27,6 +27,7 @@ const DEFAULTS = {
   badge_position: "tr", rating_position: "right",
   button_size: "md", button_align: "center", button_full: true,
   payments_align: "left", bonus_align: "left",
+  logo_anim: "none", button_anim: "none",
 } as const;
 
 export default function StorefrontThemePage() {
@@ -149,6 +150,19 @@ export default function StorefrontThemePage() {
               </label>
             </div>
             <p className="mt-2 text-xs text-neutral-500">Badge corner applies to the “Corner” badge style. Button alignment takes effect when “Full-width” is off.</p>
+          </div>
+
+          <div className={`${cx.card} p-4`}>
+            <div className="mb-3 text-sm text-neutral-400">Animation</div>
+            <div className="grid grid-cols-2 gap-3">
+              {sel("logo_anim", "Logo animation", [
+                { value: "none", label: "None" }, { value: "pulse", label: "Pulse" },
+                { value: "float", label: "Float" }, { value: "spin", label: "Spin" }, { value: "glow", label: "Glow" }])}
+              {sel("button_anim", "Play Now animation", [
+                { value: "none", label: "None" }, { value: "pulse", label: "Pulse" },
+                { value: "glow", label: "Glow" }, { value: "shine", label: "Shine" }, { value: "bounce", label: "Bounce" }])}
+            </div>
+            <p className="mt-2 text-xs text-neutral-500">Animated logo files (GIF/APNG/WebP) also play on their own. All effects pause under reduced-motion.</p>
           </div>
 
           <div className={`${cx.card} p-4`}>

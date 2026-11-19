@@ -14,12 +14,13 @@ function Stars({ rate, color }: { rate: number; color: string }) {
   );
 }
 
-function LogoTile({ src, title, accent }: { src: string | null; title: string; accent: string }) {
+function LogoTile({ src, title, accent, anim }: { src: string | null; title: string; accent: string; anim: string }) {
   const [broken, setBroken] = useState(false);
+  const animCls = anim && anim !== "none" ? `sf-logo-${anim}` : "";
   const ok = !!src && src.startsWith("https://") && !broken;
   if (ok) {
     return (
-      <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-black/40">
+      <div className={`flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-black/40 ${animCls}`}>
         <img src={src as string} alt={title} onError={() => setBroken(true)}
           className="max-h-full max-w-full object-contain" />
       </div>
@@ -27,7 +28,7 @@ function LogoTile({ src, title, accent }: { src: string | null; title: string; a
   }
   const initials = title.replace(/[^a-zA-Z0-9 ]/g, "").split(/\s+/).map((w) => w[0]).slice(0, 2).join("").toUpperCase() || "C";
   return (
-    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-white/10"
+    <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-white/10 ${animCls}`}
       style={{ background: `linear-gradient(145deg, ${accent}22, #000)`, color: accent, fontWeight: 700 }}>
       {initials}
     </div>
@@ -152,6 +153,7 @@ export function StorefrontCard({ casino, idx, theme }: { casino: Casino; idx: nu
     theme.button_size === "sm" ? "px-6 py-2.5 text-base"
     : theme.button_size === "lg" ? "px-10 py-5 text-xl"
     : "px-8 py-4 text-lg";
+  const btnAnim = theme.button_anim !== "none" ? `sf-btn-${theme.button_anim}` : "";
 
   const paymentIcons = casino.payments
     .filter((p) => !!p.payment_link)
@@ -174,7 +176,7 @@ export function StorefrontCard({ casino, idx, theme }: { casino: Casino; idx: nu
       <div className="flex items-center justify-between gap-3 p-5"
         style={{ flexDirection: ratingLeft ? "row-reverse" : "row" }}>
         <div className="flex items-center gap-3">
-          {theme.show_logo && <LogoTile src={casino.logo_img} title={casino.title} accent={theme.accent_color} />}
+          {theme.show_logo && <LogoTile src={casino.logo_img} title={casino.title} accent={theme.accent_color} anim={theme.logo_anim} />}
           <div className="text-lg font-semibold text-white" style={{ fontFamily: headFont, letterSpacing: 0.5 }}>
             {casino.title}
           </div>
@@ -249,7 +251,7 @@ export function StorefrontCard({ casino, idx, theme }: { casino: Casino; idx: nu
       <div className="p-5 pt-1" style={{ textAlign: theme.button_align }}>
         {safeLink ? (
           <a href={safeLink} target="_blank" rel="noopener noreferrer sponsored"
-            className={`sf-cta ${primary ? "sf-cta--top" : ""} ${theme.button_full ? "block w-full" : "inline-block"} rounded-full text-center font-semibold transition hover:brightness-110 ${btnSize}`}
+            className={`sf-cta ${primary ? "sf-cta--top" : ""} ${btnAnim} ${theme.button_full ? "block w-full" : "inline-block"} rounded-full text-center font-semibold transition hover:brightness-110 ${btnSize}`}
             style={{ background: `linear-gradient(180deg, ${btnColor}, ${btnColor}cc)`, color: btnText, fontFamily: headFont, letterSpacing: 1 }}>
             {theme.button_text} ›
           </a>

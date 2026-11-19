@@ -43,4 +43,6 @@ export interface Theme {
   button_full: boolean;
   payments_align: "left" | "center" | "right";
   bonus_align: "left" | "center";
+  logo_anim: "none" | "pulse" | "float" | "spin" | "glow";
+  button_anim: "none" | "pulse" | "glow" | "shine" | "bounce";
 }

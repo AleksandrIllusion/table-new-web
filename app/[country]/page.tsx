@@ -16,6 +16,7 @@ const FALLBACK: Theme = {
   badge_position: "tr", rating_position: "right",
   button_size: "md", button_align: "center", button_full: true,
   payments_align: "left", bonus_align: "left",
+  logo_anim: "none", button_anim: "none",
 };
 
 /** Required for `output: 'export'` — only these codes are written into `out/`. */

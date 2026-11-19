@@ -55,3 +55,22 @@ body {
 .sf-marquee:hover .sf-marquee-anim{ animation-play-state: paused; }
 @keyframes sf-marq { from{ transform: translateX(0);} to{ transform: translateX(-50%);} }
 @media (prefers-reduced-motion: reduce){ .sf-marquee-anim{ animation: none; } }
+
+/* --- logo & button animation presets --- */
+@media (prefers-reduced-motion: no-preference){
+  .sf-logo-pulse{ animation: sf-pulse 2.4s ease-in-out infinite; }
+  .sf-logo-float{ animation: sf-float 3s ease-in-out infinite; }
+  .sf-logo-spin{ animation: sf-spin 9s linear infinite; }
+  .sf-logo-glow{ animation: sf-logoglow 2.4s ease-in-out infinite; }
+  .sf-btn-pulse{ animation: sf-btnpulse 1.8s ease-in-out infinite; }
+  .sf-btn-glow{ animation: sf-btnglow 1.8s ease-in-out infinite; }
+  .sf-btn-bounce{ animation: sf-btnbounce 1.6s ease-in-out infinite; }
+  .sf-cta.sf-btn-shine::after{ animation: sf-shine 2.6s ease-in-out infinite; }
+}
+@keyframes sf-pulse{ 0%,100%{ transform: scale(1);} 50%{ transform: scale(1.08);} }
+@keyframes sf-float{ 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(-4px);} }
+@keyframes sf-spin{ to{ transform: rotate(360deg);} }
+@keyframes sf-logoglow{ 0%,100%{ box-shadow: 0 0 0 rgba(0,0,0,0);} 50%{ box-shadow: 0 0 16px var(--card-accent);} }
+@keyframes sf-btnpulse{ 0%,100%{ transform: scale(1);} 50%{ transform: scale(1.03);} }
+@keyframes sf-btnglow{ 0%,100%{ box-shadow: 0 0 0 rgba(0,0,0,0);} 50%{ box-shadow: 0 0 22px color-mix(in srgb, var(--card-accent) 60%, transparent);} }
+@keyframes sf-btnbounce{ 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(-3px);} }
