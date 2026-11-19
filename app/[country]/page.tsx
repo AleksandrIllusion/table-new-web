@@ -10,6 +10,7 @@ const FALLBACK: Theme = {
   logo_url: null, accent_color: "#FFD700", bg_color: "#111111",
   card_from: "#3E0037", card_to: "#0D1341",
   button_text: "PLAY NOW", button_primary: "#16A34A", button_secondary: "#FFD700",
+  button_fg: "#FFFFFF", button_fg2: "#161616",
   card_variant: "classic", card_radius: 18, badge_style: "bar", pill_shape: "pill",
   show_logo: true, show_payments: true,
   font_heading: "Aboreto", font_body: "Inter", heading_size: 38,

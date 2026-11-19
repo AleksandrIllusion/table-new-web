@@ -28,6 +28,7 @@ const DEFAULTS = {
   button_size: "md", button_align: "center", button_full: true,
   payments_align: "left", bonus_align: "left",
   logo_anim: "none", button_anim: "none",
+  button_fg: "#FFFFFF", button_fg2: "#161616",
 } as const;
 
 export default function StorefrontThemePage() {
@@ -106,6 +107,8 @@ export default function StorefrontThemePage() {
               {color("card_to", "Gradient to")}
               {color("button_primary", "Button (top)")}
               {color("button_secondary", "Button (rest)")}
+              {color("button_fg", "Button text (top)")}
+              {color("button_fg2", "Button text (rest)")}
             </div>
           </div>
 

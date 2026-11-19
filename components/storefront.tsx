@@ -136,7 +136,7 @@ export function StorefrontCard({ casino, idx, theme }: { casino: Casino; idx: nu
   const badge = theme.badges[idx];
   const primary = idx === 0;
   const btnColor = primary ? theme.button_primary : theme.button_secondary;
-  const btnText = primary ? "#fff" : "#161616";
+  const btnText = primary ? theme.button_fg : theme.button_fg2;
   const safeLink = casino.link?.startsWith("https://") ? casino.link : undefined;
   const headline = casino.bonuses[0]?.bonus;
   const { percent, amount, spins } = parseBonus(headline);

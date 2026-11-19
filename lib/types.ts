@@ -27,6 +27,8 @@ export interface Theme {
   button_text: string;
   button_primary: string;
   button_secondary: string;
+  button_fg: string;
+  button_fg2: string;
   card_variant: "classic" | "compact" | "split";
   card_radius: number;
   badge_style: "bar" | "corner";
