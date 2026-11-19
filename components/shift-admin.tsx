@@ -10,12 +10,7 @@ type ShiftRow = {
   id: number;
   domain: string;
   cloaker: boolean;
-  country: string;
-};
-
-/** Admin Countries (`cp_countries`) — same list as /admin/countries. */
-type CountryRow = {
-  id: number;
+  /** Stored cloaker country value; should be ISO (CY, GB) to match visitor user.country. */
   country: string;
 };
 
@@ -25,73 +20,92 @@ type GeoRow = {
   country: string;
 };
 
-const nameKey = (s: string) => s.trim().toLowerCase();
+/** Common ISO 3166-1 alpha-2 codes for Shift matching (ipinfo `user.country`). */
+const ISO_SUGGESTIONS = [
+  "GB",
+  "CY",
+  "US",
+  "DE",
+  "FR",
+  "ES",
+  "IT",
+  "NL",
+  "IE",
+  "AU",
+  "CA",
+  "NZ",
+  "PT",
+  "FI",
+  "SE",
+  "NO",
+  "DK",
+  "PL",
+  "AT",
+  "CH",
+] as const;
+
+const ISO_RE = /^[A-Za-z]{2}$/;
+
+const normalizeCode = (value: string) => value.trim().toUpperCase();
 
 export function ShiftAdmin() {
   const [items, setItems] = useState<ShiftRow[]>([]);
-  const [countries, setCountries] = useState<CountryRow[]>([]);
   const [geos, setGeos] = useState<GeoRow[]>([]);
   const [open, setOpen] = useState(false);
   const [domain, setDomain] = useState("");
-  const [countryId, setCountryId] = useState("");
+  const [countryCode, setCountryCode] = useState("");
   const [shiftOn, setShiftOn] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
   const [togglingId, setTogglingId] = useState<number | null>(null);
   const [updatingCountryId, setUpdatingCountryId] = useState<number | null>(null);
+  const [draftCodes, setDraftCodes] = useState<Record<number, string>>({});
 
   const token = () => getToken();
 
-  const countryIdForRow = (row: ShiftRow) => {
-    const match = countries.find((c) => nameKey(c.country) === nameKey(row.country));
-    return match ? String(match.id) : "";
-  };
-
-  const findGeoByName = (list: GeoRow[], country: string) =>
-    list.find((g) => nameKey(g.country) === nameKey(country));
+  const findGeoByCode = (list: GeoRow[], code: string) =>
+    list.find((g) => normalizeCode(g.country) === normalizeCode(code));
 
   /**
-   * Switch APIs key off cp_geolocation ids, while the dropdown shows cp_countries
-   * (same as Countries admin). Ensure a geo row exists for the chosen name.
+   * Persist ISO code in cp_geolocation.country so POST /switch can exact-match
+   * visitor user.country (ipinfo ISO). Create geo row if missing.
    */
-  const resolveGeoId = async (countryName: string): Promise<{ id: number; list: GeoRow[] }> => {
-    const existing = findGeoByName(geos, countryName);
-    if (existing) return { id: existing.id, list: geos };
+  const resolveGeoId = async (code: string): Promise<number> => {
+    const iso = normalizeCode(code);
+    const existing = findGeoByCode(geos, iso);
+    if (existing) return existing.id;
 
     try {
       const created = await api<GeoRow>("/switch/cloaker-countries/create", {
         method: "POST",
         token: token(),
-        body: JSON.stringify({ country: countryName.trim() }),
+        body: JSON.stringify({ country: iso }),
       });
-      const list = [...geos, created];
-      setGeos(list);
-      return { id: created.id, list };
+      setGeos((prev) => [...prev, created]);
+      return created.id;
     } catch {
-      // Race / already exists — refresh and look up by name.
       const refreshed = await api<GeoRow[]>("/switch/cloaker-countries", { token: token() });
       const list = Array.isArray(refreshed) ? refreshed : [];
       setGeos(list);
-      const found = findGeoByName(list, countryName);
-      if (!found) {
-        throw new Error(`Could not resolve geolocation for ${countryName}`);
-      }
-      return { id: found.id, list };
+      const found = findGeoByCode(list, iso);
+      if (!found) throw new Error(`Could not resolve geolocation for ${iso}`);
+      return found.id;
     }
   };
 
   const load = async () => {
     try {
-      const [rows, countryList, geoList] = await Promise.all([
+      const [rows, geoList] = await Promise.all([
         api<ShiftRow[]>("/switch/get-all-cloaks", { token: token() }),
-        // Same source as Admin → Countries (not cloaker-countries / cp_geolocation).
-        api<CountryRow[]>("/countries"),
         api<GeoRow[]>("/switch/cloaker-countries", { token: token() }),
       ]);
-      setItems(Array.isArray(rows) ? rows : []);
-      setCountries(Array.isArray(countryList) ? countryList : []);
+      const nextRows = Array.isArray(rows) ? rows : [];
+      setItems(nextRows);
       setGeos(Array.isArray(geoList) ? geoList : []);
+      setDraftCodes(
+        Object.fromEntries(nextRows.map((r) => [r.id, normalizeCode(r.country) || r.country])),
+      );
     } catch (e) {
       setMsg({ kind: "err", text: e instanceof Error ? e.message : "Failed to load" });
     }
@@ -112,8 +126,12 @@ export function ShiftAdmin() {
         token: token(),
         body: JSON.stringify({ id: row.id, cloaker: !Boolean(row.cloaker) }),
       });
-      if (Array.isArray(next)) setItems(next);
-      else await load();
+      if (Array.isArray(next)) {
+        setItems(next);
+        setDraftCodes(
+          Object.fromEntries(next.map((r) => [r.id, normalizeCode(r.country) || r.country])),
+        );
+      } else await load();
       setMsg({
         kind: "ok",
         text: `Shift ${!row.cloaker ? "enabled" : "disabled"} for ${row.domain}`,
@@ -125,18 +143,20 @@ export function ShiftAdmin() {
     }
   };
 
-  const changeCountry = async (row: ShiftRow, nextCountryId: string) => {
-    if (!nextCountryId) return;
-    const currentId = countryIdForRow(row);
-    if (nextCountryId === currentId) return;
+  const changeCountryCode = async (row: ShiftRow, rawCode: string) => {
+    const iso = normalizeCode(rawCode);
+    setDraftCodes((prev) => ({ ...prev, [row.id]: iso }));
 
-    const selected = countries.find((c) => String(c.id) === nextCountryId);
-    if (!selected) return;
+    if (!ISO_RE.test(iso)) {
+      setMsg({ kind: "err", text: "Country code must be a 2-letter ISO code (e.g. CY, GB)" });
+      return;
+    }
+    if (normalizeCode(row.country) === iso) return;
 
     setMsg(null);
     setUpdatingCountryId(row.id);
     try {
-      const { id: geoId } = await resolveGeoId(selected.country);
+      const geoId = await resolveGeoId(iso);
       // Nest UpdateCloakCountryDto: { cloaker_id, country_id } — country_id is geolocation id
       await api<GeoRow>("/switch/update-cloak-country", {
         method: "PUT",
@@ -147,13 +167,14 @@ export function ShiftAdmin() {
         }),
       });
       setItems((prev) =>
-        prev.map((r) => (r.id === row.id ? { ...r, country: selected.country } : r)),
+        prev.map((r) => (r.id === row.id ? { ...r, country: iso } : r)),
       );
       setMsg({
         kind: "ok",
-        text: `Country updated for ${row.domain} → ${selected.country}`,
+        text: `Country code updated for ${row.domain} → ${iso}`,
       });
     } catch (e) {
+      setDraftCodes((prev) => ({ ...prev, [row.id]: normalizeCode(row.country) || row.country }));
       setMsg({ kind: "err", text: e instanceof Error ? e.message : "Country update failed" });
     } finally {
       setUpdatingCountryId(null);
@@ -167,7 +188,9 @@ export function ShiftAdmin() {
     else if (!/^(?=.{1,253}$)(?!-)[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+$/.test(d)) {
       errs.domain = "Domain must look like example.com";
     }
-    if (!countryId) errs.country_id = "Country is required";
+    const iso = normalizeCode(countryCode);
+    if (!iso) errs.country_code = "Country code is required";
+    else if (!ISO_RE.test(iso)) errs.country_code = "Use a 2-letter ISO code (e.g. CY, GB)";
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -176,14 +199,10 @@ export function ShiftAdmin() {
     e.preventDefault();
     setMsg(null);
     if (!validate()) return;
-    const selected = countries.find((c) => String(c.id) === countryId);
-    if (!selected) {
-      setErrors({ country_id: "Country is required" });
-      return;
-    }
+    const iso = normalizeCode(countryCode);
     setSaving(true);
     try {
-      const { id: geoId } = await resolveGeoId(selected.country);
+      const geoId = await resolveGeoId(iso);
       // Nest CreateCloakDto: { domain, country_id, cloaker } — country_id is geolocation id
       await api("/switch/create", {
         method: "POST",
@@ -194,9 +213,9 @@ export function ShiftAdmin() {
           cloaker: shiftOn,
         }),
       });
-      setMsg({ kind: "ok", text: `Domain ${domain.trim().toLowerCase()} created.` });
+      setMsg({ kind: "ok", text: `Domain ${domain.trim().toLowerCase()} created (${iso}).` });
       setDomain("");
-      setCountryId("");
+      setCountryCode("");
       setShiftOn(true);
       setErrors({});
       setOpen(false);
@@ -212,12 +231,12 @@ export function ShiftAdmin() {
     <main className="px-4 py-10">
       <PageHeader
         title="Shift"
-        subtitle="Set country and enable or disable shift per domain"
+        subtitle="Set ISO country code and enable or disable shift per domain"
         action={
           <button
             onClick={() => {
               setDomain("");
-              setCountryId("");
+              setCountryCode("");
               setShiftOn(true);
               setErrors({});
               setOpen(true);
@@ -233,13 +252,19 @@ export function ShiftAdmin() {
         <p className={`mb-4 ${msg.kind === "ok" ? cx.okBox : cx.errorBox}`}>{msg.text}</p>
       )}
 
+      <p className="mb-3 text-sm text-neutral-400">
+        Country code must match the visitor ISO from the FE (ipinfo), e.g.{" "}
+        <code className="text-neutral-200">CY</code>, <code className="text-neutral-200">GB</code>
+        — not display names like Cyprus.
+      </p>
+
       <div className={`overflow-hidden ${cx.card}`}>
         <table className="w-full text-sm">
           <thead className="bg-white/5 text-left text-neutral-400">
             <tr>
               <th className="p-3 font-medium">#</th>
               <th className="p-3 font-medium">Domain</th>
-              <th className="p-3 font-medium">Country</th>
+              <th className="p-3 font-medium">Country code</th>
               <th className="p-3 font-medium">Shift</th>
             </tr>
           </thead>
@@ -253,32 +278,33 @@ export function ShiftAdmin() {
             )}
             {items.map((row) => {
               const on = Boolean(row.cloaker);
-              const selectedCountryId = countryIdForRow(row);
+              const draft = draftCodes[row.id] ?? row.country;
               return (
                 <tr key={row.id} className="hover:bg-white/[0.03]">
                   <td className="p-3 text-neutral-500">{row.id}</td>
                   <td className="p-3 font-medium text-white">{row.domain}</td>
                   <td className="p-3">
-                    {countries.length === 0 ? (
-                      <span className="text-neutral-300">{row.country}</span>
-                    ) : (
-                      <select
-                        value={selectedCountryId}
-                        disabled={updatingCountryId === row.id}
-                        onChange={(e) => changeCountry(row, e.target.value)}
-                        aria-label={`Country for ${row.domain}`}
-                        className={`${cx.input} min-w-[10rem] py-1.5 text-sm disabled:opacity-50`}
-                      >
-                        {!selectedCountryId && (
-                          <option value="">{row.country || "—"}</option>
-                        )}
-                        {countries.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.country}
-                          </option>
-                        ))}
-                      </select>
-                    )}
+                    <input
+                      list="shift-iso-codes"
+                      value={draft}
+                      maxLength={2}
+                      disabled={updatingCountryId === row.id}
+                      onChange={(e) =>
+                        setDraftCodes((prev) => ({
+                          ...prev,
+                          [row.id]: e.target.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 2),
+                        }))
+                      }
+                      onBlur={() => changeCountryCode(row, draft)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.currentTarget.blur();
+                        }
+                      }}
+                      aria-label={`Country code for ${row.domain}`}
+                      placeholder="CY"
+                      className={`${cx.input} w-[4.5rem] py-1.5 text-center font-mono uppercase tracking-wider disabled:opacity-50`}
+                    />
                   </td>
                   <td className="p-3">
                     <button
@@ -301,6 +327,12 @@ export function ShiftAdmin() {
         </table>
       </div>
 
+      <datalist id="shift-iso-codes">
+        {ISO_SUGGESTIONS.map((code) => (
+          <option key={code} value={code} />
+        ))}
+      </datalist>
+
       {open && (
         <Modal title="New shift domain" onClose={() => setOpen(false)}>
           <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
@@ -313,30 +345,22 @@ export function ShiftAdmin() {
                 className={cx.input}
               />
             </Field>
-            <Field label="Country" error={errors.country_id}>
-              <select
-                value={countryId}
-                onChange={(e) => setCountryId(e.target.value)}
-                aria-invalid={!!errors.country_id}
-                className={cx.input}
-              >
-                <option value="">—</option>
-                {countries.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.country}
-                  </option>
-                ))}
-              </select>
+            <Field label="Country code (ISO)" error={errors.country_code}>
+              <input
+                list="shift-iso-codes"
+                value={countryCode}
+                maxLength={2}
+                onChange={(e) =>
+                  setCountryCode(e.target.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 2))
+                }
+                placeholder="CY"
+                aria-invalid={!!errors.country_code}
+                className={`${cx.input} font-mono uppercase tracking-wider`}
+              />
             </Field>
-            {countries.length === 0 && (
-              <p className="text-sm text-amber-200/90">
-                No countries yet. Add them under{" "}
-                <a href="/admin/countries" className="underline hover:text-amber-100">
-                  Admin → Countries
-                </a>
-                .
-              </p>
-            )}
+            <p className="text-xs text-neutral-500">
+              Must match FE visitor country (e.g. CY for Cyprus, GB for United Kingdom).
+            </p>
             <label className="flex items-center gap-3 text-sm text-neutral-300">
               <input
                 type="checkbox"
