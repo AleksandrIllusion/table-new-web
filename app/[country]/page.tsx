@@ -13,6 +13,9 @@ const FALLBACK: Theme = {
   card_variant: "classic", card_radius: 18, badge_style: "bar", pill_shape: "pill",
   show_logo: true, show_payments: true,
   font_heading: "Aboreto", font_body: "Inter", heading_size: 38,
+  badge_position: "tr", rating_position: "right",
+  button_size: "md", button_align: "center", button_full: true,
+  payments_align: "left", bonus_align: "left",
 };
 
 /** Required for `output: 'export'` — only these codes are written into `out/`. */

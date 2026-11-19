@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import type { Casino, Theme } from "@/lib/types";
 
 const ff = (name: string) => `"${name}", serif`;
@@ -31,6 +31,16 @@ function LogoTile({ src, title, accent }: { src: string | null; title: string; a
       style={{ background: `linear-gradient(145deg, ${accent}22, #000)`, color: accent, fontWeight: 700 }}>
       {initials}
     </div>
+  );
+}
+
+// Иконка платёжки: прячется, если ссылка битая или картинка не загрузилась (частый случай у Simple Icons).
+function PaymentIcon({ src, alt }: { src: string; alt: string }) {
+  const [broken, setBroken] = useState(false);
+  if (broken || !src.startsWith("https://")) return null;
+  return (
+    <img src={src} alt={alt} title={alt} onError={() => setBroken(true)}
+      className="h-5 w-auto object-contain opacity-90" />
   );
 }
 
@@ -69,6 +79,17 @@ function parseBonus(text?: string) {
   return { percent, amount, spins };
 }
 
+// Угол для corner-бейджа + скруглённый внутренний угол.
+function badgeCorner(pos: Theme["badge_position"]): CSSProperties {
+  switch (pos) {
+    case "tl": return { top: 0, left: 0, borderBottomRightRadius: 14 };
+    case "bl": return { bottom: 0, left: 0, borderTopRightRadius: 14 };
+    case "br": return { bottom: 0, right: 0, borderTopLeftRadius: 14 };
+    case "tr":
+    default:   return { top: 0, right: 0, borderBottomLeftRadius: 14 };
+  }
+}
+
 export function StorefrontCard({ casino, idx, theme }: { casino: Casino; idx: number; theme: Theme }) {
   const badge = theme.badges[idx];
   const primary = idx === 0;
@@ -84,6 +105,14 @@ export function StorefrontCard({ casino, idx, theme }: { casino: Casino; idx: nu
   const headFont = ff(theme.font_heading);
   const bodyFont = ff(theme.font_body);
 
+  const ratingLeft = theme.rating_position === "left";
+  const bonusCenter = theme.bonus_align === "center";
+  const payJustify = theme.payments_align === "center" ? "center" : theme.payments_align === "right" ? "flex-end" : "flex-start";
+  const btnSize =
+    theme.button_size === "sm" ? "px-6 py-2.5 text-base"
+    : theme.button_size === "lg" ? "px-10 py-5 text-xl"
+    : "px-8 py-4 text-lg";
+
   return (
     <article className={`sf-card relative overflow-hidden border ${primary ? "sf-top" : ""}`}
       style={{
@@ -93,12 +122,13 @@ export function StorefrontCard({ casino, idx, theme }: { casino: Casino; idx: nu
         ["--card-accent" as any]: theme.accent_color,
       }}>
       {badge && theme.badge_style === "corner" && (
-        <span className="absolute right-0 top-0 px-4 py-1.5 text-sm font-medium"
-          style={{ background: theme.accent_color, color: "#111", borderBottomLeftRadius: 14 }}>{badge}</span>
+        <span className="absolute z-10 px-4 py-1.5 text-sm font-medium"
+          style={{ ...badgeCorner(theme.badge_position), background: theme.accent_color, color: "#111" }}>{badge}</span>
       )}
 
       {/* header */}
-      <div className="flex items-center justify-between gap-3 p-5">
+      <div className="flex items-center justify-between gap-3 p-5"
+        style={{ flexDirection: ratingLeft ? "row-reverse" : "row" }}>
         <div className="flex items-center gap-3">
           {theme.show_logo && <LogoTile src={casino.logo_img} title={casino.title} accent={theme.accent_color} />}
           <div className="text-lg font-semibold text-white" style={{ fontFamily: headFont, letterSpacing: 0.5 }}>
@@ -124,11 +154,11 @@ export function StorefrontCard({ casino, idx, theme }: { casino: Casino; idx: nu
 
       {/* welcome bonus */}
       {!compact && headline && (
-        <div className="px-5 pt-5" style={{ background: grad }}>
+        <div className="px-5 pt-5" style={{ background: grad, textAlign: theme.bonus_align }}>
           <div className="text-[11px] font-medium tracking-[0.2em] text-white/70">WELCOME BONUS</div>
 
           {percent ? (
-            <div className="mt-1.5 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <div className={`mt-1.5 flex flex-wrap items-baseline gap-x-3 gap-y-1 ${bonusCenter ? "justify-center" : ""}`}>
               <span className="leading-none text-white"
                 style={{ fontFamily: headFont, fontSize: theme.heading_size }}>{percent}</span>
               {amount && (
@@ -138,7 +168,6 @@ export function StorefrontCard({ casino, idx, theme }: { casino: Casino; idx: nu
               )}
             </div>
           ) : (
-            // нет процента — показываем текст компактно, в 2 строки максимум
             <div className="mt-1.5 line-clamp-2 text-xl leading-snug text-white"
               style={{ fontFamily: headFont }}>{headline}</div>
           )}
@@ -152,7 +181,8 @@ export function StorefrontCard({ casino, idx, theme }: { casino: Casino; idx: nu
       )}
 
       {/* features */}
-      <div className="flex flex-wrap gap-2 px-5 py-4" style={compact ? undefined : { background: grad }}>
+      <div className="flex flex-wrap gap-2 px-5 py-4"
+        style={{ ...(compact ? {} : { background: grad }), justifyContent: bonusCenter ? "center" : "flex-start" }}>
         {casino.features.map((f) => (
           <span key={f.id} className="border px-3 py-1.5 text-sm text-white"
             style={{ borderColor: "#ffffff2e", borderRadius: pillRadius, background: "rgba(255,255,255,.04)" }}>
@@ -163,24 +193,23 @@ export function StorefrontCard({ casino, idx, theme }: { casino: Casino; idx: nu
 
       {/* payments */}
       {theme.show_payments && casino.payments.some((p) => p.payment_link) && (
-        <div className="flex flex-wrap items-center gap-3 px-5 py-3">
-          {casino.payments.filter((p) => p.payment_link?.startsWith("https://")).map((p) => (
-            <img key={p.id} src={p.payment_link as string} alt={p.payment}
-              className="h-5 w-auto object-contain opacity-90" />
-          ))}
+        <div className="flex flex-wrap items-center gap-3 px-5 py-3" style={{ justifyContent: payJustify }}>
+          {casino.payments
+            .filter((p) => !!p.payment_link)
+            .map((p) => <PaymentIcon key={p.id} src={p.payment_link as string} alt={p.payment} />)}
         </div>
       )}
 
       {/* CTA */}
-      <div className="p-5 pt-1">
+      <div className="p-5 pt-1" style={{ textAlign: theme.button_align }}>
         {safeLink ? (
           <a href={safeLink} target="_blank" rel="noopener noreferrer sponsored"
-            className={`sf-cta ${primary ? "sf-cta--top" : ""} block rounded-full py-4 text-center text-lg font-semibold transition hover:brightness-110`}
+            className={`sf-cta ${primary ? "sf-cta--top" : ""} ${theme.button_full ? "block w-full" : "inline-block"} rounded-full text-center font-semibold transition hover:brightness-110 ${btnSize}`}
             style={{ background: `linear-gradient(180deg, ${btnColor}, ${btnColor}cc)`, color: btnText, fontFamily: headFont, letterSpacing: 1 }}>
             {theme.button_text} ›
           </a>
         ) : (
-          <span className="block rounded-full bg-neutral-800 py-4 text-center text-neutral-400">Unavailable</span>
+          <span className={`${theme.button_full ? "block w-full" : "inline-block"} rounded-full bg-neutral-800 ${btnSize} text-center text-neutral-400`}>Unavailable</span>
         )}
       </div>
     </article>

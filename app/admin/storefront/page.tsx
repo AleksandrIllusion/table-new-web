@@ -12,11 +12,22 @@ const DEMO = {
   casino_rate: 4.9,
   bonuses: [{ id: 1, bonus: "100% up to $750 + 50 chances" }],
   features: [{ id: 1, feature: "24/7 Support" }, { id: 2, feature: "High withdrawal limit" }, { id: 3, feature: "VIP" }],
-  payments: [],
+  payments: [
+    { id: 1, payment: "Visa", payment_link: "https://cdn.simpleicons.org/visa/white" },
+    { id: 2, payment: "Mastercard", payment_link: "https://cdn.simpleicons.org/mastercard/white" },
+    { id: 3, payment: "PayPal", payment_link: "https://cdn.simpleicons.org/paypal/white" },
+  ],
 };
 
 const FONTS = ["Aboreto","Abril Fatface","Playfair Display","Cinzel","Oswald","Bebas Neue","Montserrat","Poppins","Inter"];
-const FONT_DEFAULTS = { font_heading: "Aboreto", font_body: "Inter", heading_size: 38 };
+
+// Дефолты для полей, которых может не быть в старой строке темы (до миграции/деплоя).
+const DEFAULTS = {
+  font_heading: "Aboreto", font_body: "Inter", heading_size: 38,
+  badge_position: "tr", rating_position: "right",
+  button_size: "md", button_align: "center", button_full: true,
+  payments_align: "left", bonus_align: "left",
+} as const;
 
 export default function StorefrontThemePage() {
   const [theme, setTheme] = useState<Theme | null>(null);
@@ -25,7 +36,7 @@ export default function StorefrontThemePage() {
 
   useEffect(() => {
     (async () => {
-      try { setTheme({ ...FONT_DEFAULTS, ...(await api<Theme>("/theme")) }); }
+      try { setTheme({ ...DEFAULTS, ...(await api<Theme>("/theme")) }); }
       catch (e) { setMsg({ kind: "err", text: e instanceof Error ? e.message : "Failed to load" }); }
     })();
   }, []);
@@ -38,10 +49,9 @@ export default function StorefrontThemePage() {
   const save = async () => {
     setSaving(true); setMsg(null);
     try {
-      // не шлём на бэк служебные поля (id, updated_at) — валидатор их отклонит
       const { id, updated_at, ...payload } = theme as Theme & { id?: number; updated_at?: string };
       const saved = await api<Theme>("/theme", { method: "PUT", token: getToken(), body: JSON.stringify(payload) });
-      setTheme(saved);
+      setTheme({ ...DEFAULTS, ...saved });
       setMsg({ kind: "ok", text: "Saved. Storefront updated." });
     } catch (e) {
       setMsg({ kind: "err", text: e instanceof Error ? e.message : "Failed to save" });
@@ -55,6 +65,14 @@ export default function StorefrontThemePage() {
           className="h-9 w-12 rounded border border-neutral-700 bg-neutral-950" />
         <input value={theme[k] as string} onChange={(e) => set(k, e.target.value)} className={cx.input} />
       </div>
+    </Field>
+  );
+
+  const sel = (k: keyof Theme, label: string, options: { value: string; label: string }[]) => (
+    <Field label={label}>
+      <select value={theme[k] as string} onChange={(e) => set(k, e.target.value)} className={cx.input}>
+        {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
     </Field>
   );
 
@@ -93,29 +111,13 @@ export default function StorefrontThemePage() {
           <div className={`${cx.card} p-4`}>
             <div className="mb-3 text-sm text-neutral-400">Card design</div>
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Layout">
-                <select value={theme.card_variant} onChange={(e) => set("card_variant", e.target.value)} className={cx.input}>
-                  <option value="classic">Classic</option>
-                  <option value="compact">Compact</option>
-                  <option value="split">Split</option>
-                </select>
-              </Field>
+              {sel("card_variant", "Layout", [
+                { value: "classic", label: "Classic" }, { value: "compact", label: "Compact" }, { value: "split", label: "Split" }])}
               <Field label="Corner radius">
                 <input type="number" min={0} max={40} value={theme.card_radius}
                   onChange={(e) => set("card_radius", Number(e.target.value))} className={cx.input} />
               </Field>
-              <Field label="Badge style">
-                <select value={theme.badge_style} onChange={(e) => set("badge_style", e.target.value)} className={cx.input}>
-                  <option value="bar">Bar</option>
-                  <option value="corner">Corner</option>
-                </select>
-              </Field>
-              <Field label="Pill shape">
-                <select value={theme.pill_shape} onChange={(e) => set("pill_shape", e.target.value)} className={cx.input}>
-                  <option value="pill">Pill</option>
-                  <option value="square">Square</option>
-                </select>
-              </Field>
+              {sel("pill_shape", "Pill shape", [{ value: "pill", label: "Pill" }, { value: "square", label: "Square" }])}
               <label className="flex items-center gap-2 text-sm text-neutral-300">
                 <input type="checkbox" checked={theme.show_logo} onChange={(e) => set("show_logo", e.target.checked)} /> Show logo
               </label>
@@ -123,6 +125,30 @@ export default function StorefrontThemePage() {
                 <input type="checkbox" checked={theme.show_payments} onChange={(e) => set("show_payments", e.target.checked)} /> Show payments
               </label>
             </div>
+          </div>
+
+          <div className={`${cx.card} p-4`}>
+            <div className="mb-3 text-sm text-neutral-400">Layout &amp; positions</div>
+            <div className="grid grid-cols-2 gap-3">
+              {sel("badge_style", "Badge style", [{ value: "bar", label: "Bar" }, { value: "corner", label: "Corner" }])}
+              {sel("badge_position", "Badge corner", [
+                { value: "tr", label: "Top-right" }, { value: "tl", label: "Top-left" },
+                { value: "br", label: "Bottom-right" }, { value: "bl", label: "Bottom-left" }])}
+              {sel("rating_position", "Rating / logo side", [
+                { value: "right", label: "Rating right · logo left" },
+                { value: "left", label: "Rating left · logo right" }])}
+              {sel("bonus_align", "Bonus alignment", [{ value: "left", label: "Left" }, { value: "center", label: "Center" }])}
+              {sel("payments_align", "Payments alignment", [
+                { value: "left", label: "Left" }, { value: "center", label: "Center" }, { value: "right", label: "Right" }])}
+              {sel("button_size", "Button size", [
+                { value: "sm", label: "Small" }, { value: "md", label: "Medium" }, { value: "lg", label: "Large" }])}
+              {sel("button_align", "Button alignment", [
+                { value: "left", label: "Left" }, { value: "center", label: "Center" }, { value: "right", label: "Right" }])}
+              <label className="flex items-center gap-2 text-sm text-neutral-300">
+                <input type="checkbox" checked={theme.button_full} onChange={(e) => set("button_full", e.target.checked)} /> Full-width button
+              </label>
+            </div>
+            <p className="mt-2 text-xs text-neutral-500">Badge corner applies to the “Corner” badge style. Button alignment takes effect when “Full-width” is off.</p>
           </div>
 
           <div className={`${cx.card} p-4`}>

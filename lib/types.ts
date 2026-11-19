@@ -36,4 +36,11 @@ export interface Theme {
   font_heading: string;
   font_body: string;
   heading_size: number;
+  badge_position: "tl" | "tr" | "bl" | "br";
+  rating_position: "left" | "right";
+  button_size: "sm" | "md" | "lg";
+  button_align: "left" | "center" | "right";
+  button_full: boolean;
+  payments_align: "left" | "center" | "right";
+  bonus_align: "left" | "center";
 }
