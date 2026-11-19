@@ -21,6 +21,8 @@ const FALLBACK: Theme = {
   button_icon: "", button_icon_pos: "left", button_icon_size: 20, button_icon_anim: "none",
   logo_size: 56, logo_order: "before", show_title: true, rating_size: 30, show_rating: true,
   rating_style: "box",
+  header_padding: 28, header_margin_bottom: 24,
+  rating_in_header: true, rating_top: false, rating_bottom: false,
 };
 
 /** Required for `output: 'export'` — only these codes are written into `out/`. */
@@ -50,17 +52,19 @@ export default async function CountryPage({ params }: { params: { country: strin
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-8" style={{ background: theme.bg_color }}>
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col">
         <StorefrontHeader theme={theme} />
-        {error && (
-          <p className="rounded-lg border border-red-900 bg-red-950 p-4 text-red-200">{error}</p>
-        )}
-        {!error && casinos.length === 0 && (
-          <p className="text-center text-neutral-400">No casinos available for {code}.</p>
-        )}
-        {casinos.map((c, i) => (
-          <StorefrontCard key={c.casino_id} casino={c} idx={i} theme={theme} />
-        ))}
+        <div className="flex flex-col gap-6">
+          {error && (
+            <p className="rounded-lg border border-red-900 bg-red-950 p-4 text-red-200">{error}</p>
+          )}
+          {!error && casinos.length === 0 && (
+            <p className="text-center text-neutral-400">No casinos available for {code}.</p>
+          )}
+          {casinos.map((c, i) => (
+            <StorefrontCard key={c.casino_id} casino={c} idx={i} theme={theme} />
+          ))}
+        </div>
       </div>
     </main>
   );

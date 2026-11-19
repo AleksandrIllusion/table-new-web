@@ -33,6 +33,8 @@ const DEFAULTS = {
   button_icon: "", button_icon_pos: "left", button_icon_size: 20, button_icon_anim: "none",
   logo_size: 56, logo_order: "before", show_title: true, rating_size: 30, show_rating: true,
   rating_style: "box",
+  header_padding: 28, header_margin_bottom: 24,
+  rating_in_header: true, rating_top: false, rating_bottom: false,
 } as const;
 
 export default function StorefrontThemePage() {
@@ -99,6 +101,14 @@ export default function StorefrontThemePage() {
               <Field label="Tagline"><input value={theme.tagline} onChange={(e) => set("tagline", e.target.value)} className={cx.input} /></Field>
               <Field label="Logo URL"><input value={theme.logo_url ?? ""} onChange={(e) => set("logo_url", e.target.value)} className={cx.input} /></Field>
               <Field label="Header pills (comma-separated)"><input value={theme.pills.join(", ")} onChange={(e) => list("pills", e.target.value)} className={cx.input} /></Field>
+              <Field label={`Header padding (${theme.header_padding}px)`}>
+                <input type="range" min={8} max={80} value={theme.header_padding}
+                  onChange={(e) => set("header_padding", Number(e.target.value))} className="w-full" />
+              </Field>
+              <Field label={`Header bottom margin (${theme.header_margin_bottom}px)`}>
+                <input type="range" min={0} max={80} value={theme.header_margin_bottom}
+                  onChange={(e) => set("header_margin_bottom", Number(e.target.value))} className="w-full" />
+              </Field>
             </div>
           </div>
 
@@ -137,6 +147,15 @@ export default function StorefrontThemePage() {
               </label>
               <label className="flex items-center gap-2 text-sm text-neutral-300">
                 <input type="checkbox" checked={theme.show_rating} onChange={(e) => set("show_rating", e.target.checked)} /> Show rating
+              </label>
+              <label className="flex items-center gap-2 text-sm text-neutral-300">
+                <input type="checkbox" checked={theme.rating_in_header} onChange={(e) => set("rating_in_header", e.target.checked)} disabled={!theme.show_rating} /> Rating in card header
+              </label>
+              <label className="flex items-center gap-2 text-sm text-neutral-300">
+                <input type="checkbox" checked={theme.rating_top} onChange={(e) => set("rating_top", e.target.checked)} disabled={!theme.show_rating} /> Rating at card top
+              </label>
+              <label className="flex items-center gap-2 text-sm text-neutral-300">
+                <input type="checkbox" checked={theme.rating_bottom} onChange={(e) => set("rating_bottom", e.target.checked)} disabled={!theme.show_rating} /> Rating at card bottom
               </label>
             </div>
           </div>
@@ -255,7 +274,7 @@ export default function StorefrontThemePage() {
         <div className="lg:sticky lg:top-20 lg:self-start">
           <div className="mb-2 text-sm text-neutral-400">Live preview</div>
           <div className="rounded-2xl p-4" style={{ background: theme.bg_color }}>
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col">
               <StorefrontHeader theme={theme} />
               <StorefrontCard casino={DEMO as any} idx={0} theme={theme} />
             </div>

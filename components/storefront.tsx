@@ -89,9 +89,16 @@ function Marquee({ children, align = "left", gap = 12 }: { children: ReactNode; 
 }
 
 export function StorefrontHeader({ theme }: { theme: Theme }) {
+  const pad = Number.isFinite(Number(theme.header_padding)) ? Number(theme.header_padding) : 28;
+  const mb = Number.isFinite(Number(theme.header_margin_bottom)) ? Number(theme.header_margin_bottom) : 24;
   return (
-    <header className="rounded-2xl border p-7 text-center"
-      style={{ borderColor: `${theme.accent_color}33`, background: "radial-gradient(120% 100% at 50% 0%, #15131b, #0a0a0a)" }}>
+    <header className="rounded-2xl border text-center"
+      style={{
+        borderColor: `${theme.accent_color}33`,
+        background: "radial-gradient(120% 100% at 50% 0%, #15131b, #0a0a0a)",
+        padding: pad,
+        marginBottom: mb,
+      }}>
       {theme.logo_url && <img src={theme.logo_url} alt="" className="mx-auto mb-3 h-10 w-auto object-contain" />}
       <div style={{ fontFamily: ff(theme.font_heading), letterSpacing: 6 }}>
         <div className="text-xs" style={{ color: "#b9b9b9", letterSpacing: 8 }}>{theme.header_title}</div>
@@ -235,6 +242,12 @@ export function StorefrontCard({ casino, idx, theme }: { casino: Casino; idx: nu
           style={{ ...badgeCorner(theme.badge_position), background: theme.accent_color, color: "#111" }}>{badge}</span>
       )}
 
+      {theme.show_rating && theme.rating_top && (
+        <div className="flex justify-center px-5 pt-5">
+          <RatingDisplay rate={casino.casino_rate} theme={theme} headFont={headFont} />
+        </div>
+      )}
+
       {/* header */}
       <div className="flex items-center justify-between gap-3 p-5"
         style={{ flexDirection: ratingLeft ? "row-reverse" : "row" }}>
@@ -246,7 +259,9 @@ export function StorefrontCard({ casino, idx, theme }: { casino: Casino; idx: nu
             </div>
           )}
         </div>
-        {theme.show_rating && <RatingDisplay rate={casino.casino_rate} theme={theme} headFont={headFont} />}
+        {theme.show_rating && theme.rating_in_header !== false && (
+          <RatingDisplay rate={casino.casino_rate} theme={theme} headFont={headFont} />
+        )}
       </div>
 
       {badge && theme.badge_style === "bar" && (
@@ -302,6 +317,12 @@ export function StorefrontCard({ casino, idx, theme }: { casino: Casino; idx: nu
       {theme.show_payments && paymentIcons.length > 0 && (
         <div className="px-5 py-3">
           <Marquee align={theme.payments_align} gap={14}>{paymentIcons}</Marquee>
+        </div>
+      )}
+
+      {theme.show_rating && theme.rating_bottom && (
+        <div className="flex justify-center px-5 pb-2 pt-1">
+          <RatingDisplay rate={casino.casino_rate} theme={theme} headFont={headFont} />
         </div>
       )}
 
