@@ -6,6 +6,7 @@ import { getToken } from "@/lib/auth";
 import type { Theme } from "@/lib/types";
 import { cx, Field, PageHeader } from "@/components/ui";
 import { StorefrontHeader, StorefrontCard } from "@/components/storefront";
+import { PLAY_ICONS } from "@/lib/play-icons";
 
 const DEMO = {
   casino_id: 1, title: "Test Casino", link: "https://example.com", logo_img: null,
@@ -29,6 +30,7 @@ const DEFAULTS = {
   payments_align: "left", bonus_align: "left",
   logo_anim: "none", button_anim: "none",
   button_fg: "#FFFFFF", button_fg2: "#161616",
+  button_icon: "", button_icon_pos: "left", button_icon_size: 20, button_icon_anim: "none",
 } as const;
 
 export default function StorefrontThemePage() {
@@ -166,6 +168,37 @@ export default function StorefrontThemePage() {
                 { value: "glow", label: "Glow" }, { value: "shine", label: "Shine" }, { value: "bounce", label: "Bounce" }])}
             </div>
             <p className="mt-2 text-xs text-neutral-500">Animated logo files (GIF/APNG/WebP) also play on their own. All effects pause under reduced-motion.</p>
+          </div>
+
+          <div className={`${cx.card} p-4`}>
+            <div className="mb-3 text-sm text-neutral-400">Button icon</div>
+            <div className="mb-3 grid grid-cols-8 gap-2">
+              <button type="button" title="None" onClick={() => set("button_icon", "")}
+                className="flex h-9 items-center justify-center rounded-md border text-xs text-neutral-400"
+                style={{ borderColor: theme.button_icon === "" ? theme.accent_color : "#3f3f46" }}>off</button>
+              {PLAY_ICONS.map((ic) => (
+                <button key={ic.slug} type="button" title={ic.label} onClick={() => set("button_icon", ic.slug)}
+                  className="flex h-9 items-center justify-center rounded-md border text-white"
+                  style={{ borderColor: theme.button_icon === ic.slug ? theme.accent_color : "#3f3f46" }}>
+                  <svg viewBox="0 0 24 24" width={18} height={18} fill="currentColor"
+                    dangerouslySetInnerHTML={{ __html: ic.svg }} />
+                </button>
+              ))}
+            </div>
+            <Field label="Custom image URL (overrides preset; GIF ok)">
+              <input value={theme.button_icon.startsWith("http") ? theme.button_icon : ""}
+                onChange={(e) => set("button_icon", e.target.value)} placeholder="https://…" className={cx.input} />
+            </Field>
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              {sel("button_icon_pos", "Icon position", [{ value: "left", label: "Left of text" }, { value: "right", label: "Right of text" }])}
+              {sel("button_icon_anim", "Icon animation", [
+                { value: "none", label: "None" }, { value: "spin", label: "Spin" },
+                { value: "pulse", label: "Pulse" }, { value: "bounce", label: "Bounce" }, { value: "glow", label: "Glow" }])}
+              <Field label={`Icon size (${theme.button_icon_size}px)`}>
+                <input type="range" min={12} max={48} value={theme.button_icon_size}
+                  onChange={(e) => set("button_icon_size", Number(e.target.value))} className="w-full" />
+              </Field>
+            </div>
           </div>
 
           <div className={`${cx.card} p-4`}>

@@ -74,3 +74,11 @@ body {
 @keyframes sf-btnpulse{ 0%,100%{ transform: scale(1);} 50%{ transform: scale(1.03);} }
 @keyframes sf-btnglow{ 0%,100%{ box-shadow: 0 0 0 rgba(0,0,0,0);} 50%{ box-shadow: 0 0 22px color-mix(in srgb, var(--card-accent) 60%, transparent);} }
 @keyframes sf-btnbounce{ 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(-3px);} }
+
+/* --- CTA icon animation presets --- */
+@media (prefers-reduced-motion: no-preference){
+  .sf-ico-spin{ animation: sf-spin 3s linear infinite; }
+  .sf-ico-pulse{ animation: sf-pulse 1.6s ease-in-out infinite; }
+  .sf-ico-bounce{ animation: sf-btnbounce 1.4s ease-in-out infinite; }
+  .sf-ico-glow{ animation: sf-logoglow 1.8s ease-in-out infinite; border-radius: 4px; }
+}

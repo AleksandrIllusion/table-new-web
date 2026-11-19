@@ -18,6 +18,7 @@ const FALLBACK: Theme = {
   button_size: "md", button_align: "center", button_full: true,
   payments_align: "left", bonus_align: "left",
   logo_anim: "none", button_anim: "none",
+  button_icon: "", button_icon_pos: "left", button_icon_size: 20, button_icon_anim: "none",
 };
 
 /** Required for `output: 'export'` — only these codes are written into `out/`. */

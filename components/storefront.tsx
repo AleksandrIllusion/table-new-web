@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import type { Casino, Theme } from "@/lib/types";
+import { PLAY_ICON_MAP } from "@/lib/play-icons";
 
 const ff = (name: string) => `"${name}", serif`;
 
@@ -154,6 +155,17 @@ export function StorefrontCard({ casino, idx, theme }: { casino: Casino; idx: nu
     : theme.button_size === "lg" ? "px-10 py-5 text-xl"
     : "px-8 py-4 text-lg";
   const btnAnim = theme.button_anim !== "none" ? `sf-btn-${theme.button_anim}` : "";
+  const icoAnim = theme.button_icon_anim !== "none" ? `sf-ico-${theme.button_icon_anim}` : "";
+  const icoSize = theme.button_icon_size;
+  const buttonIcon = theme.button_icon
+    ? theme.button_icon.startsWith("http")
+      ? <img src={theme.button_icon} alt="" className={icoAnim} style={{ height: icoSize, width: "auto", objectFit: "contain", flex: "none" }} />
+      : PLAY_ICON_MAP[theme.button_icon]
+        ? <svg viewBox="0 0 24 24" width={icoSize} height={icoSize} fill="currentColor" aria-hidden
+            className={icoAnim} style={{ flex: "none" }}
+            dangerouslySetInnerHTML={{ __html: PLAY_ICON_MAP[theme.button_icon] }} />
+        : null
+    : null;
 
   const paymentIcons = casino.payments
     .filter((p) => !!p.payment_link)
@@ -253,7 +265,11 @@ export function StorefrontCard({ casino, idx, theme }: { casino: Casino; idx: nu
           <a href={safeLink} target="_blank" rel="noopener noreferrer sponsored"
             className={`sf-cta ${primary ? "sf-cta--top" : ""} ${btnAnim} ${theme.button_full ? "block w-full" : "inline-block"} rounded-full text-center font-semibold transition hover:brightness-110 ${btnSize}`}
             style={{ background: `linear-gradient(180deg, ${btnColor}, ${btnColor}cc)`, color: btnText, fontFamily: headFont, letterSpacing: 1 }}>
-            {theme.button_text} ›
+            <span className="inline-flex items-center justify-center gap-2 align-middle">
+              {buttonIcon && theme.button_icon_pos === "left" && buttonIcon}
+              <span>{theme.button_text} ›</span>
+              {buttonIcon && theme.button_icon_pos === "right" && buttonIcon}
+            </span>
           </a>
         ) : (
           <span className={`${theme.button_full ? "block w-full" : "inline-block"} rounded-full bg-neutral-800 ${btnSize} text-center text-neutral-400`}>Unavailable</span>

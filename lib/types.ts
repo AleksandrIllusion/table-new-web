@@ -47,4 +47,8 @@ export interface Theme {
   bonus_align: "left" | "center";
   logo_anim: "none" | "pulse" | "float" | "spin" | "glow";
   button_anim: "none" | "pulse" | "glow" | "shine" | "bounce";
+  button_icon: string;
+  button_icon_pos: "left" | "right";
+  button_icon_size: number;
+  button_icon_anim: "none" | "spin" | "pulse" | "bounce" | "glow";
 }
