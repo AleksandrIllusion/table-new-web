@@ -32,6 +32,7 @@ const DEFAULTS = {
   button_fg: "#FFFFFF", button_fg2: "#161616",
   button_icon: "", button_icon_pos: "left", button_icon_size: 20, button_icon_anim: "none",
   logo_size: 56, logo_order: "before", show_title: true, rating_size: 30, show_rating: true,
+  rating_style: "box",
 } as const;
 
 export default function StorefrontThemePage() {
@@ -166,6 +167,9 @@ export default function StorefrontThemePage() {
               </Field>
               {sel("logo_order", "Logo order", [
                 { value: "before", label: "Logo before name" }, { value: "after", label: "Logo after name" }])}
+              {sel("rating_style", "Rating style", [
+                { value: "box", label: "Box + stars" }, { value: "stars", label: "Stars" },
+                { value: "badge", label: "Badge" }, { value: "minimal", label: "Number only" }, { value: "bar", label: "Bar" }])}
               <Field label={`Rating size (${theme.rating_size}px)`}>
                 <input type="range" min={18} max={48} value={theme.rating_size}
                   onChange={(e) => set("rating_size", Number(e.target.value))} className="w-full" />

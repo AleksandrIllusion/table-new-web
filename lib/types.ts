@@ -56,4 +56,5 @@ export interface Theme {
   show_title: boolean;
   rating_size: number;
   show_rating: boolean;
+  rating_style: "box" | "stars" | "badge" | "minimal" | "bar";
 }

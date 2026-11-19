@@ -6,10 +6,10 @@ import { PLAY_ICON_MAP } from "@/lib/play-icons";
 
 const ff = (name: string) => `"${name}", serif`;
 
-function Stars({ rate, color }: { rate: number; color: string }) {
+function Stars({ rate, color, size = 13 }: { rate: number; color: string; size?: number }) {
   const n = Math.max(0, Math.min(5, Math.round(rate)));
   return (
-    <span style={{ color, letterSpacing: 2, fontSize: 13 }}>
+    <span style={{ color, letterSpacing: 2, fontSize: size }}>
       {"★".repeat(n)}<span style={{ opacity: 0.3 }}>{"★".repeat(5 - n)}</span>
     </span>
   );
@@ -134,6 +134,56 @@ function badgeCorner(pos: Theme["badge_position"]): CSSProperties {
   }
 }
 
+function RatingDisplay({ rate, theme, headFont }: { rate: number; theme: Theme; headFont: string }) {
+  const accent = theme.accent_color;
+  const size = theme.rating_size;
+  switch (theme.rating_style) {
+    case "badge":
+      return (
+        <div className="sf-rate shrink-0 flex items-center justify-center rounded-full font-bold"
+          style={{ width: size * 2, height: size * 2, background: accent, color: "#111", fontFamily: headFont, fontSize: Math.round(size * 0.7) }}>
+          {rate}
+        </div>
+      );
+    case "stars":
+      return (
+        <div className="shrink-0 flex flex-col items-end gap-0.5">
+          <Stars rate={rate} color={accent} size={Math.round(size * 0.6)} />
+          <span className="text-xs text-neutral-400">{rate}/5</span>
+        </div>
+      );
+    case "minimal":
+      return (
+        <div className="shrink-0 leading-none" style={{ color: accent, fontFamily: headFont, fontSize: size }}>
+          {rate}<span className="align-top text-sm text-neutral-400">/5</span>
+        </div>
+      );
+    case "bar":
+      return (
+        <div className="shrink-0" style={{ width: 120 }}>
+          <div className="flex items-baseline justify-between">
+            <span style={{ color: accent, fontFamily: headFont, fontSize: Math.round(size * 0.75) }}>{rate}</span>
+            <span className="text-xs text-neutral-400">/5</span>
+          </div>
+          <div className="mt-1 h-1.5 overflow-hidden rounded-full" style={{ background: "#333" }}>
+            <div className="h-full rounded-full" style={{ width: `${(rate / 5) * 100}%`, background: accent }} />
+          </div>
+        </div>
+      );
+    case "box":
+    default:
+      return (
+        <div className="sf-rate shrink-0 rounded-2xl border px-4 py-2 text-center"
+          style={{ borderColor: accent, background: "linear-gradient(180deg, #221a06, #000)", boxShadow: `0 0 18px ${accent}22` }}>
+          <div className="leading-none" style={{ color: accent, fontFamily: headFont, fontSize: size }}>
+            {rate}<span className="align-top text-sm text-neutral-400">/5</span>
+          </div>
+          <div className="mt-1"><Stars rate={rate} color={accent} /></div>
+        </div>
+      );
+  }
+}
+
 export function StorefrontCard({ casino, idx, theme }: { casino: Casino; idx: number; theme: Theme }) {
   const badge = theme.badges[idx];
   const primary = idx === 0;
@@ -196,16 +246,7 @@ export function StorefrontCard({ casino, idx, theme }: { casino: Casino; idx: nu
             </div>
           )}
         </div>
-        {theme.show_rating && (
-          <div className="sf-rate shrink-0 rounded-2xl border px-4 py-2 text-center"
-            style={{ borderColor: theme.accent_color, background: "linear-gradient(180deg, #221a06, #000)",
-                     boxShadow: `0 0 18px ${theme.accent_color}22` }}>
-            <div className="leading-none" style={{ color: theme.accent_color, fontFamily: headFont, fontSize: theme.rating_size }}>
-              {casino.casino_rate}<span className="align-top text-sm text-neutral-400">/5</span>
-            </div>
-            <div className="mt-1"><Stars rate={casino.casino_rate} color={theme.accent_color} /></div>
-          </div>
-        )}
+        {theme.show_rating && <RatingDisplay rate={casino.casino_rate} theme={theme} headFont={headFont} />}
       </div>
 
       {badge && theme.badge_style === "bar" && (
