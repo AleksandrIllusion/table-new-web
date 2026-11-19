@@ -51,4 +51,9 @@ export interface Theme {
   button_icon_pos: "left" | "right";
   button_icon_size: number;
   button_icon_anim: "none" | "spin" | "pulse" | "bounce" | "glow";
+  logo_size: number;
+  logo_order: "before" | "after";
+  show_title: boolean;
+  rating_size: number;
+  show_rating: boolean;
 }

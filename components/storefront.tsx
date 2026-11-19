@@ -15,13 +15,14 @@ function Stars({ rate, color }: { rate: number; color: string }) {
   );
 }
 
-function LogoTile({ src, title, accent, anim }: { src: string | null; title: string; accent: string; anim: string }) {
+function LogoTile({ src, title, accent, anim, size }: { src: string | null; title: string; accent: string; anim: string; size: number }) {
   const [broken, setBroken] = useState(false);
   const animCls = anim && anim !== "none" ? `sf-logo-${anim}` : "";
+  const box = { width: size, height: size } as const;
   const ok = !!src && src.startsWith("https://") && !broken;
   if (ok) {
     return (
-      <div className={`flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-black/40 ${animCls}`}>
+      <div className={`flex shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-black/40 ${animCls}`} style={box}>
         <img src={src as string} alt={title} onError={() => setBroken(true)}
           className="max-h-full max-w-full object-contain" />
       </div>
@@ -29,8 +30,8 @@ function LogoTile({ src, title, accent, anim }: { src: string | null; title: str
   }
   const initials = title.replace(/[^a-zA-Z0-9 ]/g, "").split(/\s+/).map((w) => w[0]).slice(0, 2).join("").toUpperCase() || "C";
   return (
-    <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-white/10 ${animCls}`}
-      style={{ background: `linear-gradient(145deg, ${accent}22, #000)`, color: accent, fontWeight: 700 }}>
+    <div className={`flex shrink-0 items-center justify-center rounded-xl border border-white/10 ${animCls}`}
+      style={{ ...box, background: `linear-gradient(145deg, ${accent}22, #000)`, color: accent, fontWeight: 700, fontSize: Math.round(size * 0.32) }}>
       {initials}
     </div>
   );
@@ -187,20 +188,24 @@ export function StorefrontCard({ casino, idx, theme }: { casino: Casino; idx: nu
       {/* header */}
       <div className="flex items-center justify-between gap-3 p-5"
         style={{ flexDirection: ratingLeft ? "row-reverse" : "row" }}>
-        <div className="flex items-center gap-3">
-          {theme.show_logo && <LogoTile src={casino.logo_img} title={casino.title} accent={theme.accent_color} anim={theme.logo_anim} />}
-          <div className="text-lg font-semibold text-white" style={{ fontFamily: headFont, letterSpacing: 0.5 }}>
-            {casino.title}
-          </div>
+        <div className="flex items-center gap-3" style={{ flexDirection: theme.logo_order === "after" ? "row-reverse" : "row" }}>
+          {theme.show_logo && <LogoTile src={casino.logo_img} title={casino.title} accent={theme.accent_color} anim={theme.logo_anim} size={theme.logo_size} />}
+          {theme.show_title && (
+            <div className="text-lg font-semibold text-white" style={{ fontFamily: headFont, letterSpacing: 0.5 }}>
+              {casino.title}
+            </div>
+          )}
         </div>
-        <div className="sf-rate shrink-0 rounded-2xl border px-4 py-2 text-center"
-          style={{ borderColor: theme.accent_color, background: "linear-gradient(180deg, #221a06, #000)",
-                   boxShadow: `0 0 18px ${theme.accent_color}22` }}>
-          <div className="leading-none" style={{ color: theme.accent_color, fontFamily: headFont, fontSize: 30 }}>
-            {casino.casino_rate}<span className="align-top text-sm text-neutral-400">/5</span>
+        {theme.show_rating && (
+          <div className="sf-rate shrink-0 rounded-2xl border px-4 py-2 text-center"
+            style={{ borderColor: theme.accent_color, background: "linear-gradient(180deg, #221a06, #000)",
+                     boxShadow: `0 0 18px ${theme.accent_color}22` }}>
+            <div className="leading-none" style={{ color: theme.accent_color, fontFamily: headFont, fontSize: theme.rating_size }}>
+              {casino.casino_rate}<span className="align-top text-sm text-neutral-400">/5</span>
+            </div>
+            <div className="mt-1"><Stars rate={casino.casino_rate} color={theme.accent_color} /></div>
           </div>
-          <div className="mt-1"><Stars rate={casino.casino_rate} color={theme.accent_color} /></div>
-        </div>
+        )}
       </div>
 
       {badge && theme.badge_style === "bar" && (
