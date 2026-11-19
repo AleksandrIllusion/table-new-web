@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import type { Casino, Theme } from "@/lib/types";
 
 const ff = (name: string) => `"${name}", serif`;
@@ -40,7 +40,48 @@ function PaymentIcon({ src, alt }: { src: string; alt: string }) {
   if (broken || !src.startsWith("https://")) return null;
   return (
     <img src={src} alt={alt} title={alt} onError={() => setBroken(true)}
-      className="h-5 w-auto object-contain opacity-90" />
+      className="h-5 w-auto shrink-0 object-contain opacity-90" />
+  );
+}
+
+/**
+ * Горизонтальный ряд, который сам измеряет переполнение: пока элементы влезают —
+ * обычная строка (с выравниванием align), как только не влезают — плавная
+ * бегущая строка с паузой при наведении и уважением к prefers-reduced-motion.
+ */
+function Marquee({ children, align = "left", gap = 12 }: { children: ReactNode; align?: "left" | "center" | "right"; gap?: number }) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const blockRef = useRef<HTMLDivElement>(null);
+  const [animate, setAnimate] = useState(false);
+  const [dur, setDur] = useState(22);
+
+  useEffect(() => {
+    const wrap = wrapRef.current, block = blockRef.current;
+    if (!wrap || !block) return;
+    const measure = () => {
+      const single = block.scrollWidth;
+      const overflow = single > wrap.clientWidth + 4;
+      setAnimate(overflow);
+      setDur(Math.max(12, Math.round(single / 40))); // ~40px/сек
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(wrap);
+    return () => ro.disconnect();
+  }, [children]);
+
+  const justify = align === "center" ? "center" : align === "right" ? "flex-end" : "flex-start";
+  const blockStyle: CSSProperties = { display: "flex", gap, flexShrink: 0, alignItems: "center" };
+
+  return (
+    <div ref={wrapRef} className="sf-marquee">
+      <div className={animate ? "sf-marquee-track sf-marquee-anim" : "sf-marquee-track"}
+        style={{ width: animate ? "max-content" : "100%", justifyContent: animate ? "flex-start" : justify,
+                 ["--marq-dur" as any]: `${dur}s` }}>
+        <div ref={blockRef} style={blockStyle}>{children}</div>
+        {animate && <div aria-hidden style={{ ...blockStyle, paddingLeft: gap }}>{children}</div>}
+      </div>
+    </div>
   );
 }
 
@@ -107,11 +148,14 @@ export function StorefrontCard({ casino, idx, theme }: { casino: Casino; idx: nu
 
   const ratingLeft = theme.rating_position === "left";
   const bonusCenter = theme.bonus_align === "center";
-  const payJustify = theme.payments_align === "center" ? "center" : theme.payments_align === "right" ? "flex-end" : "flex-start";
   const btnSize =
     theme.button_size === "sm" ? "px-6 py-2.5 text-base"
     : theme.button_size === "lg" ? "px-10 py-5 text-xl"
     : "px-8 py-4 text-lg";
+
+  const paymentIcons = casino.payments
+    .filter((p) => !!p.payment_link)
+    .map((p) => <PaymentIcon key={p.id} src={p.payment_link as string} alt={p.payment} />);
 
   return (
     <article className={`sf-card relative overflow-hidden border ${primary ? "sf-top" : ""}`}
@@ -135,7 +179,7 @@ export function StorefrontCard({ casino, idx, theme }: { casino: Casino; idx: nu
             {casino.title}
           </div>
         </div>
-        <div className="sf-rate rounded-2xl border px-4 py-2 text-center"
+        <div className="sf-rate shrink-0 rounded-2xl border px-4 py-2 text-center"
           style={{ borderColor: theme.accent_color, background: "linear-gradient(180deg, #221a06, #000)",
                    boxShadow: `0 0 18px ${theme.accent_color}22` }}>
           <div className="leading-none" style={{ color: theme.accent_color, fontFamily: headFont, fontSize: 30 }}>
@@ -180,23 +224,24 @@ export function StorefrontCard({ casino, idx, theme }: { casino: Casino; idx: nu
         </div>
       )}
 
-      {/* features */}
-      <div className="flex flex-wrap gap-2 px-5 py-4"
-        style={{ ...(compact ? {} : { background: grad }), justifyContent: bonusCenter ? "center" : "flex-start" }}>
-        {casino.features.map((f) => (
-          <span key={f.id} className="border px-3 py-1.5 text-sm text-white"
-            style={{ borderColor: "#ffffff2e", borderRadius: pillRadius, background: "rgba(255,255,255,.04)" }}>
-            ⚡ {f.feature}
-          </span>
-        ))}
-      </div>
+      {/* features — single row, auto-scrolls when it overflows */}
+      {casino.features.length > 0 && (
+        <div className="px-5 py-4" style={compact ? undefined : { background: grad }}>
+          <Marquee align={bonusCenter ? "center" : "left"} gap={8}>
+            {casino.features.map((f) => (
+              <span key={f.id} className="whitespace-nowrap border px-3 py-1.5 text-sm text-white"
+                style={{ borderColor: "#ffffff2e", borderRadius: pillRadius, background: "rgba(255,255,255,.04)" }}>
+                ⚡ {f.feature}
+              </span>
+            ))}
+          </Marquee>
+        </div>
+      )}
 
-      {/* payments */}
-      {theme.show_payments && casino.payments.some((p) => p.payment_link) && (
-        <div className="flex flex-wrap items-center gap-3 px-5 py-3" style={{ justifyContent: payJustify }}>
-          {casino.payments
-            .filter((p) => !!p.payment_link)
-            .map((p) => <PaymentIcon key={p.id} src={p.payment_link as string} alt={p.payment} />)}
+      {/* payments — single row, auto-scrolls when it overflows */}
+      {theme.show_payments && paymentIcons.length > 0 && (
+        <div className="px-5 py-3">
+          <Marquee align={theme.payments_align} gap={14}>{paymentIcons}</Marquee>
         </div>
       )}
 

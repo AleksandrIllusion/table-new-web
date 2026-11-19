@@ -47,3 +47,11 @@ body {
   .sf-cta.sf-cta--top::after{ animation: sf-shine 2.8s ease-in-out infinite; }
   .sf-rate::after{ animation: sf-shine 3.6s ease-in-out infinite; }
 }
+
+/* --- marquee for overflowing payments / features rows --- */
+.sf-marquee{ overflow: hidden; }
+.sf-marquee-track{ display: flex; }
+.sf-marquee-anim{ animation: sf-marq var(--marq-dur, 22s) linear infinite; will-change: transform; }
+.sf-marquee:hover .sf-marquee-anim{ animation-play-state: paused; }
+@keyframes sf-marq { from{ transform: translateX(0);} to{ transform: translateX(-50%);} }
+@media (prefers-reduced-motion: reduce){ .sf-marquee-anim{ animation: none; } }
