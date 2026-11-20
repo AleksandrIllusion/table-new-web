@@ -62,4 +62,6 @@ export interface Theme {
   rating_in_header: boolean;
   rating_top: boolean;
   rating_bottom: boolean;
+  header_position: "top" | "bottom";
+  header_style: "card" | "bar" | "minimal";
 }

@@ -23,6 +23,7 @@ const FALLBACK: Theme = {
   rating_style: "box",
   header_padding: 28, header_margin_bottom: 24,
   rating_in_header: true, rating_top: false, rating_bottom: false,
+  header_position: "top", header_style: "card",
 };
 
 /** Required for `output: 'export'` — only these codes are written into `out/`. */
@@ -53,7 +54,7 @@ export default async function CountryPage({ params }: { params: { country: strin
   return (
     <main className="mx-auto max-w-2xl px-4 py-8" style={{ background: theme.bg_color }}>
       <div className="flex flex-col">
-        <StorefrontHeader theme={theme} />
+        {theme.header_position !== "bottom" && <StorefrontHeader theme={theme} />}
         <div className="flex flex-col gap-6">
           {error && (
             <p className="rounded-lg border border-red-900 bg-red-950 p-4 text-red-200">{error}</p>
@@ -65,6 +66,7 @@ export default async function CountryPage({ params }: { params: { country: strin
             <StorefrontCard key={c.casino_id} casino={c} idx={i} theme={theme} />
           ))}
         </div>
+        {theme.header_position === "bottom" && <StorefrontHeader theme={theme} />}
       </div>
     </main>
   );

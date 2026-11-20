@@ -34,6 +34,7 @@ const DEFAULTS = {
   logo_size: 56, logo_order: "before", show_title: true, rating_size: 30, show_rating: true,
   rating_style: "box",
   header_padding: 28, header_margin_bottom: 24,
+  header_position: "top", header_style: "card",
   rating_in_header: true, rating_top: false, rating_bottom: false,
 } as const;
 
@@ -109,6 +110,11 @@ export default function StorefrontThemePage() {
                 <input type="range" min={0} max={80} value={theme.header_margin_bottom}
                   onChange={(e) => set("header_margin_bottom", Number(e.target.value))} className="w-full" />
               </Field>
+              {sel("header_style", "Header style", [
+                { value: "card", label: "Card (rounded box)" }, { value: "bar", label: "Bar (flat strip)" },
+                { value: "minimal", label: "Minimal (no box)" }])}
+              {sel("header_position", "Header position", [
+                { value: "top", label: "Top of page" }, { value: "bottom", label: "Bottom (footer)" }])}
             </div>
           </div>
 
@@ -275,8 +281,9 @@ export default function StorefrontThemePage() {
           <div className="mb-2 text-sm text-neutral-400">Live preview</div>
           <div className="rounded-2xl p-4" style={{ background: theme.bg_color }}>
             <div className="flex flex-col">
-              <StorefrontHeader theme={theme} />
+              {theme.header_position !== "bottom" && <StorefrontHeader theme={theme} />}
               <StorefrontCard casino={DEMO as any} idx={0} theme={theme} />
+              {theme.header_position === "bottom" && <StorefrontHeader theme={theme} />}
             </div>
           </div>
         </div>

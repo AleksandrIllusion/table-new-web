@@ -91,14 +91,26 @@ function Marquee({ children, align = "left", gap = 12 }: { children: ReactNode; 
 export function StorefrontHeader({ theme }: { theme: Theme }) {
   const pad = Number.isFinite(Number(theme.header_padding)) ? Number(theme.header_padding) : 28;
   const mb = Number.isFinite(Number(theme.header_margin_bottom)) ? Number(theme.header_margin_bottom) : 24;
+  const atBottom = theme.header_position === "bottom";
+  const style = theme.header_style ?? "card";
+  // Общий стиль + вариации: card (скруглённый бокс), bar (плоская полоса на всю ширину), minimal (как футер, без рамки)
+  const cls =
+    style === "bar" ? "border-y text-center"
+    : style === "minimal" ? "text-center"
+    : "rounded-2xl border text-center";
+  const bg =
+    style === "bar" ? "linear-gradient(90deg, #15131b, #0a0a0a)"
+    : style === "minimal" ? "transparent"
+    : "radial-gradient(120% 100% at 50% 0%, #15131b, #0a0a0a)";
+  const baseStyle: CSSProperties = {
+    borderColor: `${theme.accent_color}33`,
+    background: bg,
+    padding: pad,
+    marginBottom: atBottom ? 0 : mb,
+    marginTop: atBottom ? mb : 0,
+  };
   return (
-    <header className="rounded-2xl border text-center"
-      style={{
-        borderColor: `${theme.accent_color}33`,
-        background: "radial-gradient(120% 100% at 50% 0%, #15131b, #0a0a0a)",
-        padding: pad,
-        marginBottom: mb,
-      }}>
+    <header className={cls} style={baseStyle}>
       {theme.logo_url && <img src={theme.logo_url} alt="" className="mx-auto mb-3 h-10 w-auto object-contain" />}
       <div style={{ fontFamily: ff(theme.font_heading), letterSpacing: 6 }}>
         <div className="text-xs" style={{ color: "#b9b9b9", letterSpacing: 8 }}>{theme.header_title}</div>
